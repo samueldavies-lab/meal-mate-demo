@@ -26,25 +26,12 @@ export default function DevDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await base44.auth.me();
-        if (!user || user.role !== 'admin') {
-          navigate('/');
-          return;
-        }
-        if (sessionStorage.getItem(SESSION_KEY) !== 'true') {
-          navigate('/DevPortal');
-          return;
-        }
-        setIsAuthorized(true);
-      } catch {
-        navigate('/');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkAuth();
+    if (sessionStorage.getItem(SESSION_KEY) !== 'true') {
+      navigate('/DevPortal');
+      return;
+    }
+    setIsAuthorized(true);
+    setIsLoading(false);
   }, [navigate]);
 
   const { data: allStats = [], refetch: refetchStats, isFetching } = useQuery({
