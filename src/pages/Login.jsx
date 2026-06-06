@@ -22,9 +22,10 @@ export default function Login() {
     setLoading(true);
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const supabase = createClient(
+        'https://afuwtrkmkidcsquusuwv.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmdXd0cmtta2lkY3NxdXVzdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NzUwNzksImV4cCI6MjA5NjM1MTA3OX0.7ioMZ441rXM8zyejTZZ5YSxZZvydjhRtel8HXYgMRxo'
+      );
 
       if (isSignup) {
         const { error: signUpError } = await supabase.auth.signUp({ email, password });
