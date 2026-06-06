@@ -202,13 +202,13 @@ export default function Welcome() {
         {/* Portal navigation */}
         <div className="flex gap-3 mt-2">
           <button
-            onClick={() => navigate('/FeederGate')}
+            onClick={() => window.location.href = '/FeederGate'}
             className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 text-xs font-medium px-4 py-2 rounded-xl transition-all"
           >
             🐾 Feeders Portal
           </button>
           <button
-            onClick={() => navigate('/DevPortal')}
+            onClick={() => window.location.href = '/DevPortal'}
             className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 text-xs font-medium px-4 py-2 rounded-xl transition-all"
           >
             💻 Developers Portal
