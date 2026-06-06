@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabase, supabaseClient } from '@/lib/supabaseClient';
 import { createPageUrl } from '@/utils';
 import { Mail, Lock, Dog, Eye, EyeOff } from 'lucide-react';
 
@@ -21,28 +21,22 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        'https://afuwtrkmkidcsquusuwv.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmdXd0cmtta2lkY3NxdXVzdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NzUwNzksImV4cCI6MjA5NjM1MTA3OX0.7ioMZ441rXM8zyejTZZ5YSxZZvydjhRtel8HXYgMRxo'
-      );
-
       if (isSignup) {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        const { error: signUpError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
         if (signUpError) throw signUpError;
-        navigate(createPageUrl('Register'));
+        navigate('/Register');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
         const me = await supabaseClient.auth.me();
         if (!me) {
-          navigate(createPageUrl('Register'));
+          navigate('/Register');
         } else {
           const { data: stats } = await supabase.from('user_stats').select('id').eq('user_email', email).limit(1);
           if (stats?.length === 0) {
-            navigate(createPageUrl('Register'));
+            navigate('/Register');
           } else {
-            navigate(createPageUrl('Home'));
+            navigate('/Home');
           }
         }
       }
