@@ -1,0 +1,44 @@
+{
+  "name": "SocialPost",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who posted"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the user"
+    },
+    "post_type": {
+      "type": "string",
+      "enum": [
+        "milestone",
+        "invite",
+        "update",
+        "target"
+      ],
+      "description": "Type of social post"
+    },
+    "content": {
+      "type": "string",
+      "description": "Post content/message"
+    },
+    "milestone_value": {
+      "type": "number",
+      "description": "Value associated with milestone (e.g., 100 meals)"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0
+    },
+    "avatar_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_email",
+    "post_type",
+    "content"
+  ]
+}

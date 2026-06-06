@@ -1,0 +1,45 @@
+{
+  "name": "FeederProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the feeder"
+    },
+    "feeder_name": {
+      "type": "string",
+      "description": "Name of the feeder"
+    },
+    "country": {
+      "type": "string",
+      "description": "Country where feeder operates"
+    },
+    "city": {
+      "type": "string",
+      "description": "City where feeder operates"
+    },
+    "profile_photo": {
+      "type": "string",
+      "description": "Profile photo URL of the feeder"
+    },
+    "total_dogs_fed": {
+      "type": "number",
+      "default": 0
+    },
+    "total_feedings": {
+      "type": "number",
+      "default": 0
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "registration_completed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

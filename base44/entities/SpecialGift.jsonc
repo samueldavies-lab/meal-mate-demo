@@ -1,0 +1,64 @@
+{
+  "name": "SpecialGift",
+  "type": "object",
+  "properties": {
+    "feeder_email": {
+      "type": "string",
+      "description": "Email of the feeder who will receive / coordinate this gift"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the dog this gift is for"
+    },
+    "dog_name": {
+      "type": "string"
+    },
+    "donor_email": {
+      "type": "string",
+      "description": "Email of the donor who gifted this"
+    },
+    "donor_name": {
+      "type": "string"
+    },
+    "gift_type": {
+      "type": "string",
+      "enum": [
+        "collar",
+        "vaccine",
+        "vet_visit",
+        "medication",
+        "food_supply",
+        "tip",
+        "other"
+      ],
+      "description": "Type of gift"
+    },
+    "gift_label": {
+      "type": "string",
+      "description": "Human-readable label for the gift"
+    },
+    "message": {
+      "type": "string",
+      "description": "Optional message from the donor"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_coordination",
+        "in_progress",
+        "completed"
+      ],
+      "default": "pending_coordination",
+      "description": "Coordination status"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Notes from the MealMate team"
+    }
+  },
+  "required": [
+    "feeder_email",
+    "gift_type",
+    "gift_label"
+  ]
+}

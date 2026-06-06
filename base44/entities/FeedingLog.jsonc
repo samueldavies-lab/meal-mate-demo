@@ -1,0 +1,44 @@
+{
+  "name": "FeedingLog",
+  "type": "object",
+  "properties": {
+    "feeder_email": {
+      "type": "string",
+      "description": "Email of the feeder"
+    },
+    "feeder_name": {
+      "type": "string"
+    },
+    "dogs_fed": {
+      "type": "number",
+      "description": "Number of dogs fed in this session"
+    },
+    "dog_name": {
+      "type": "string",
+      "description": "Name of the dog (if known)"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Photo of the feeding"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple photos of the feeding"
+    },
+    "location": {
+      "type": "string",
+      "description": "Location of the feeding"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "feeder_email",
+    "dogs_fed"
+  ]
+}

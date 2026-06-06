@@ -1,0 +1,57 @@
+{
+  "name": "PendingMeal",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who provided the meal"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the dog being fed"
+    },
+    "dog_name": {
+      "type": "string"
+    },
+    "dog_photo": {
+      "type": "string"
+    },
+    "dog_country": {
+      "type": "string"
+    },
+    "dog_city": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "delivered"
+      ],
+      "default": "pending"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the meal was funded"
+    },
+    "delivery_scheduled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Random time between 48-58hrs for delivery notification"
+    },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_photo": {
+      "type": "string",
+      "description": "Photo proof of feeding"
+    }
+  },
+  "required": [
+    "user_email",
+    "dog_id",
+    "dog_name"
+  ]
+}

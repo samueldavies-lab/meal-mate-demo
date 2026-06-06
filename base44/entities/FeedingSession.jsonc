@@ -1,0 +1,31 @@
+{
+  "name": "FeedingSession",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the dog being fed"
+    },
+    "dog_name": {
+      "type": "string"
+    },
+    "ads_watched": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of ads watched so far (0-4)"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_email",
+    "dog_id",
+    "dog_name"
+  ]
+}

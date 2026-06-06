@@ -1,0 +1,47 @@
+{
+  "name": "StrayDog",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the stray dog"
+    },
+    "country": {
+      "type": "string",
+      "description": "Country where the dog is located"
+    },
+    "city": {
+      "type": "string",
+      "description": "City where the dog is located"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Photo of the dog"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the dog"
+    },
+    "age": {
+      "type": "string",
+      "description": "Approximate age of the dog"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "unknown"
+      ]
+    },
+    "registered_by": {
+      "type": "string",
+      "description": "Email of the feeder who registered this dog"
+    }
+  },
+  "required": [
+    "name",
+    "country",
+    "city"
+  ]
+}

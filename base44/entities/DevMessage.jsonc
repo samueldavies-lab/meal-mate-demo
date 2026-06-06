@@ -1,0 +1,42 @@
+{
+  "name": "DevMessage",
+  "type": "object",
+  "properties": {
+    "from_user_email": {
+      "type": "string",
+      "description": "Email of the user who sent the message"
+    },
+    "from_user_name": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Message content from the user"
+    },
+    "reply": {
+      "type": "string",
+      "description": "Developer reply"
+    },
+    "replied_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "replied",
+        "closed"
+      ],
+      "default": "open"
+    }
+  },
+  "required": [
+    "from_user_email",
+    "message"
+  ]
+}

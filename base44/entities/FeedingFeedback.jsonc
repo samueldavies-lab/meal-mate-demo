@@ -1,0 +1,42 @@
+{
+  "name": "FeedingFeedback",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user giving feedback"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the dog"
+    },
+    "dog_name": {
+      "type": "string"
+    },
+    "feeding_log_id": {
+      "type": "string",
+      "description": "ID of the FeedingLog being rated"
+    },
+    "food_within_72hrs": {
+      "type": "boolean",
+      "description": "Was the food provided within 72 hours?"
+    },
+    "photos_each_time": {
+      "type": "boolean",
+      "description": "Were pictures taken of the dog eating each time?"
+    },
+    "photos_good_quality": {
+      "type": "boolean",
+      "description": "Were the photos of a good quality?"
+    },
+    "overall_rating": {
+      "type": "number",
+      "description": "Overall 1-5 star rating"
+    }
+  },
+  "required": [
+    "user_email",
+    "dog_id",
+    "feeding_log_id"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "DailyFeedingLog",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the UserDog that was fed"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the dog was fed (YYYY-MM-DD)"
+    }
+  },
+  "required": [
+    "user_email",
+    "dog_id",
+    "date"
+  ]
+}

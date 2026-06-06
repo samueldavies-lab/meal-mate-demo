@@ -1,0 +1,202 @@
+{
+  "name": "UserStats",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the user"
+    },
+    "age_range": {
+      "type": "string",
+      "enum": [
+        "13-17",
+        "18-24",
+        "25-34",
+        "35-44",
+        "45-54",
+        "55-64",
+        "65+"
+      ]
+    },
+    "country": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "non-binary",
+        "prefer_not_to_say"
+      ]
+    },
+    "relationship_status": {
+      "type": "string",
+      "enum": [
+        "single",
+        "in_relationship",
+        "married",
+        "divorced",
+        "prefer_not_to_say"
+      ]
+    },
+    "employment_status": {
+      "type": "string",
+      "enum": [
+        "student",
+        "employed_full_time",
+        "employed_part_time",
+        "self_employed",
+        "unemployed",
+        "retired",
+        "prefer_not_to_say"
+      ]
+    },
+    "household_size": {
+      "type": "string",
+      "enum": [
+        "1",
+        "2",
+        "3-4",
+        "5+"
+      ]
+    },
+    "has_children": {
+      "type": "boolean"
+    },
+    "income_range": {
+      "type": "string",
+      "enum": [
+        "under_25k",
+        "25k_50k",
+        "50k_75k",
+        "75k_100k",
+        "over_100k",
+        "prefer_not_to_say"
+      ]
+    },
+    "interests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Personal values (psychographic)"
+    },
+    "lifestyle": {
+      "type": "string",
+      "enum": [
+        "homebody",
+        "adventurer",
+        "social_butterfly",
+        "wellness_focused",
+        "career_driven",
+        "family_oriented"
+      ],
+      "description": "Primary lifestyle type"
+    },
+    "shopping_frequency": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly",
+        "rarely"
+      ]
+    },
+    "shopping_channels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Where they prefer to shop"
+    },
+    "primary_device": {
+      "type": "string",
+      "enum": [
+        "smartphone",
+        "tablet",
+        "laptop",
+        "desktop"
+      ]
+    },
+    "social_media_platforms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "daily_screen_time": {
+      "type": "string",
+      "enum": [
+        "under_1h",
+        "1_3h",
+        "3_5h",
+        "over_5h"
+      ]
+    },
+    "purchase_intent_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Categories they plan to buy in next 3 months"
+    },
+    "registration_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "total_ads_watched": {
+      "type": "number",
+      "default": 0
+    },
+    "total_meals_provided": {
+      "type": "number",
+      "default": 0
+    },
+    "total_dogs_fed": {
+      "type": "number",
+      "default": 0
+    },
+    "current_progress": {
+      "type": "number",
+      "default": 0
+    },
+    "current_target": {
+      "type": "number",
+      "default": 5
+    },
+    "current_streak": {
+      "type": "number",
+      "default": 0
+    },
+    "longest_streak": {
+      "type": "number",
+      "default": 0
+    },
+    "last_activity_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_meal_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the last completed meal \u2014 used for streak tracking"
+    },
+    "avatar_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

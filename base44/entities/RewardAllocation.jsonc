@@ -1,0 +1,46 @@
+{
+  "name": "RewardAllocation",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the UserDog record"
+    },
+    "dog_name": {
+      "type": "string"
+    },
+    "reward_key": {
+      "type": "string",
+      "description": "Unique key for the reward milestone (e.g. 'deworming_75')"
+    },
+    "reward_title": {
+      "type": "string"
+    },
+    "meals_allocated": {
+      "type": "number",
+      "default": 0,
+      "description": "Total meal-points allocated to this reward for this dog"
+    },
+    "reward_cost": {
+      "type": "number",
+      "description": "Meal-points needed to complete this reward"
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_email",
+    "dog_id",
+    "reward_key"
+  ]
+}

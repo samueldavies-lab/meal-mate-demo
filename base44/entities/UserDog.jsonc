@@ -1,0 +1,42 @@
+{
+  "name": "UserDog",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who adopted this dog"
+    },
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the stray dog"
+    },
+    "dog_name": {
+      "type": "string",
+      "description": "Name of the dog"
+    },
+    "dog_photo": {
+      "type": "string",
+      "description": "Photo URL of the dog"
+    },
+    "dog_country": {
+      "type": "string"
+    },
+    "dog_city": {
+      "type": "string"
+    },
+    "meals_provided": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of meals provided to this dog"
+    },
+    "adopted_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "user_email",
+    "dog_id",
+    "dog_name"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "FeedingMedia",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title or caption for the media"
+    },
+    "media_url": {
+      "type": "string",
+      "description": "URL of the photo or video"
+    },
+    "media_type": {
+      "type": "string",
+      "enum": [
+        "photo",
+        "video"
+      ],
+      "default": "photo"
+    },
+    "location": {
+      "type": "string",
+      "description": "Location where the feeding took place"
+    },
+    "dogs_fed": {
+      "type": "number",
+      "description": "Number of dogs fed in this media"
+    },
+    "thumbnail_url": {
+      "type": "string",
+      "description": "Thumbnail URL for videos"
+    }
+  },
+  "required": [
+    "title",
+    "media_url",
+    "media_type"
+  ]
+}

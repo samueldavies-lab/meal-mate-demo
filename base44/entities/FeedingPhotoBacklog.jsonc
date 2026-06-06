@@ -1,0 +1,36 @@
+{
+  "name": "FeedingPhotoBacklog",
+  "type": "object",
+  "properties": {
+    "dog_id": {
+      "type": "string",
+      "description": "ID of the StrayDog this photo is for"
+    },
+    "dog_name": {
+      "type": "string"
+    },
+    "feeder_email": {
+      "type": "string",
+      "description": "Email of the feeder who uploaded this"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL of the feeding photo"
+    },
+    "is_used": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this photo has already been sent to a donor"
+    },
+    "used_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "dog_id",
+    "dog_name",
+    "feeder_email",
+    "photo_url"
+  ]
+}

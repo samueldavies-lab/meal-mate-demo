@@ -1,0 +1,42 @@
+{
+  "name": "Referral",
+  "type": "object",
+  "properties": {
+    "referrer_email": {
+      "type": "string",
+      "description": "Email of the user who referred"
+    },
+    "referee_email": {
+      "type": "string",
+      "description": "Email of the referred user"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Unique referral code used"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed"
+      ],
+      "default": "pending",
+      "description": "pending until referee completes first meal"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the referral was completed"
+    },
+    "bonus_meals_granted": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of bonus meals granted (5 for each)"
+    }
+  },
+  "required": [
+    "referrer_email",
+    "referee_email",
+    "referral_code"
+  ]
+}

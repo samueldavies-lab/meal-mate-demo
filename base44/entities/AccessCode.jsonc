@@ -1,0 +1,35 @@
+{
+  "name": "AccessCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The unique access code string"
+    },
+    "label": {
+      "type": "string",
+      "description": "Friendly label / note (e.g. person's name)"
+    },
+    "is_used": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the code has been used"
+    },
+    "used_by_email": {
+      "type": "string",
+      "description": "Email of the feeder who used this code"
+    },
+    "used_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the code is still valid"
+    }
+  },
+  "required": [
+    "code"
+  ]
+}
