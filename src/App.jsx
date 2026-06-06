@@ -22,6 +22,7 @@ import FeederTraining from './pages/FeederTraining';
 import DevPortal from './pages/DevPortal';
 import DevDashboard from './pages/DevDashboard';
 import Welcome from './pages/Welcome'
+import Login from './pages/Login'
 import { base44 } from '@/api/base44Client';
 
 
@@ -74,7 +75,7 @@ const AuthenticatedApp = () => {
 
   // Handle authentication errors (skip for feeder/dev routes which have their own auth)
   const pathname = window.location.pathname;
-  const isExemptRoute = pathname === '/' || pathname === '/Register' || pathname.startsWith('/Feeder') || pathname.startsWith('/DevPortal') || pathname.startsWith('/DevDashboard');
+  const isExemptRoute = pathname === '/' || pathname === '/Login' || pathname === '/Register' || pathname.startsWith('/Feeder') || pathname.startsWith('/DevPortal') || pathname.startsWith('/DevDashboard');
   if (authError && !isExemptRoute) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
@@ -121,6 +122,7 @@ const AuthenticatedApp = () => {
       />
 
 
+      <Route path="/Login" element={<Login />} />
       <Route path="/" element={<RootRedirect />} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route

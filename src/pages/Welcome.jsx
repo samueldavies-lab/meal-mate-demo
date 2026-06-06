@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Heart } from 'lucide-react';
 import { useLanguage, LANGUAGES } from '@/lib/LanguageContext';
-import { base44 } from '@/api/base44Client';
 
 const factsByLang = {
   en: ["600 million stray dogs roam the world today","A single meal costs less than a cup of coffee","Your ads fund real meals for real dogs","Together we've fed thousands of strays worldwide"],
@@ -44,6 +43,7 @@ export default function Welcome() {
 
   const facts = factsByLang[lang] || factsByLang.en;
   const goToRegister = () => navigate(createPageUrl('Register'));
+  const goToLogin = () => navigate('/Login');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col relative overflow-hidden" dir={LANGUAGES.find(l => l.code === lang)?.dir || 'ltr'}>
@@ -190,7 +190,7 @@ export default function Welcome() {
           {t('splash_cta')}
         </button>
         <button
-          onClick={() => base44.auth.redirectToLogin()}
+          onClick={goToLogin}
           className="w-full max-w-sm bg-white/10 hover:bg-white/20 border border-white/30 text-amber-100 font-semibold px-8 py-4 rounded-2xl text-base transition-all active:scale-95"
         >
           Already have an account? Log in

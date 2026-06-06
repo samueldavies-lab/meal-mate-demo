@@ -1,9 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
@@ -19,23 +20,27 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingPublicSettings(true);
       setIsLoadingAuth(true);
-      const demoUser = await base44.auth.me();
-      setUser(demoUser);
-      setIsAuthenticated(true);
-      setAppPublicSettings({ id: 'demo-app', public_settings: {} });
+      const authed = await supabaseClient.auth.isAuthenticated();
+      if (authed) {
+        const me = await supabaseClient.auth.me();
+        setUser(me);
+        setIsAuthenticated(true);
+      }
+      setAppPublicSettings({ id: 'live-app', public_settings: {} });
     } catch (e) {
-      console.error('Demo auth error:', e);
-      setAuthError({ type: 'unknown', message: 'Failed to start demo' });
+      console.error('Auth error:', e);
+      setAuthError({ type: 'unknown', message: 'Failed to load app' });
     } finally {
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabaseClient.auth.logout();
     setUser(null);
     setIsAuthenticated(false);
-    base44.auth.logout();
+    window.location.href = '/';
   };
 
   const navigateToLogin = () => {};
