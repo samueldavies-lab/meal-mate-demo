@@ -311,7 +311,7 @@ export default function Register() {
       <AdoptionMapModal
         onComplete={(dogs) => {
           setSelectedDogs(dogs);
-          setStep(0);
+          setStep(1);
         }}
       />
     );
