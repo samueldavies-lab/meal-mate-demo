@@ -1,4 +1,4 @@
-const PREFIX = 'mm_demo_';
+const PREFIX = 'mm_demo_v2_';
 const ENT_KEY = PREFIX + 'entity_';
 const ONBOARD_KEY = PREFIX + 'onboarding_done';
 

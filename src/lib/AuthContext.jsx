@@ -20,37 +20,22 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
 
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 500));
 
       setAppPublicSettings({
-        id: '6989e83e8a88fafc135e714b',
+        id: 'demo',
         public_settings: { allow_registration: true },
       });
 
-      if (base44.auth.isAuthenticated) {
-        await checkUserAuth();
-      } else {
-        setIsLoadingAuth(false);
-        setIsAuthenticated(false);
-      }
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
       setIsLoadingPublicSettings(false);
     } catch (error) {
       console.error('Demo auth error:', error);
       setAuthError({ type: 'unknown', message: error.message });
       setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
-    }
-  };
-
-  const checkUserAuth = async () => {
-    try {
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-    } finally {
       setIsLoadingAuth(false);
     }
   };
