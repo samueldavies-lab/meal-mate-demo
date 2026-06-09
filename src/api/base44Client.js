@@ -1,3 +1,3 @@
-import { supabaseClient } from '@/lib/supabaseClient';
+import { demoClient } from '@/lib/demoClient';
 
-export const base44 = supabaseClient;
+export const base44 = demoClient;

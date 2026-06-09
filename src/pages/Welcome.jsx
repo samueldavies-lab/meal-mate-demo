@@ -43,7 +43,7 @@ export default function Welcome() {
 
   const facts = factsByLang[lang] || factsByLang.en;
   const goToRegister = () => navigate(createPageUrl('Register'));
-  const goToLogin = () => navigate('/Login');
+  const goToLogin = () => {};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col relative overflow-hidden" dir={LANGUAGES.find(l => l.code === lang)?.dir || 'ltr'}>

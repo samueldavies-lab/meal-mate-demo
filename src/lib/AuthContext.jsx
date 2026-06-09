@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { base44 } from '@/api/base44Client';
 
 const AuthContext = createContext();
 
@@ -19,27 +19,23 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingPublicSettings(true);
       setIsLoadingAuth(true);
-      const authed = await supabaseClient.auth.isAuthenticated();
-      if (authed) {
-        const me = await supabaseClient.auth.me();
-        setUser(me);
-        setIsAuthenticated(true);
-      }
-      setAppPublicSettings({ id: 'live-app', public_settings: {} });
+      const demoUser = await base44.auth.me();
+      setUser(demoUser);
+      setIsAuthenticated(true);
+      setAppPublicSettings({ id: 'demo-app', public_settings: {} });
     } catch (e) {
-      console.error('Auth error:', e);
-      setAuthError({ type: 'unknown', message: 'Failed to load app' });
+      console.error('Demo auth error:', e);
+      setAuthError({ type: 'unknown', message: 'Failed to start demo' });
     } finally {
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
     }
   };
 
-  const logout = async () => {
-    await supabaseClient.auth.logout();
+  const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = '/';
+    base44.auth.logout();
   };
 
   const navigateToLogin = () => {};
