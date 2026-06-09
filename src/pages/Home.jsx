@@ -16,7 +16,7 @@ import FirstTimeWelcomeModal from '../components/onboarding/FirstTimeWelcomeModa
 import AdoptionMapModal from '../components/onboarding/AdoptionMapModal';
 import AdoptionSuccessModal from '../components/onboarding/AdoptionSuccessModal';
 import ProfileSetupModal from '../components/onboarding/ProfileSetupModal';
-import AppLixirModal from '../components/home/AppLixirModal';
+
 import confetti from 'canvas-confetti';
 import { createPageUrl } from '@/utils';
 import { Link, useNavigate } from 'react-router-dom';
@@ -42,8 +42,7 @@ export default function Home() {
   const [showAdoptionSuccess, setShowAdoptionSuccess] = useState(false);
   const [newlyAdoptedDogs, setNewlyAdoptedDogs] = useState([]);
 
-  // AppLixir ads
-  const [showAppLixirModal, setShowAppLixirModal] = useState(false);
+
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -587,14 +586,6 @@ export default function Home() {
         }}
       />
 
-      <AppLixirModal
-        isOpen={showAppLixirModal}
-        onClose={() => setShowAppLixirModal(false)}
-        onRewardGranted={() => {
-          queryClient.invalidateQueries({ queryKey: ['userStats'] });
-          toast.success('AppLixir reward granted!');
-        }}
-      />
     </div>
   );
 }
