@@ -309,6 +309,7 @@ export default function Register() {
   if (step === -1) {
     return (
       <AdoptionMapModal
+        isOpen={true}
         onComplete={(dogs) => {
           setSelectedDogs(dogs);
           setStep(1);

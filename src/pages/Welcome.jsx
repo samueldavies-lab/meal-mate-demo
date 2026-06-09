@@ -43,7 +43,10 @@ export default function Welcome() {
   }, [lang]);
 
   const facts = factsByLang[lang] || factsByLang.en;
-  const goToRegister = () => navigate(createPageUrl('Register'));
+  const goToRegister = () => {
+    localStorage.setItem('mm_demo_v2_logged_in', '1');
+    navigate(createPageUrl('Register'));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col relative overflow-hidden" dir={LANGUAGES.find(l => l.code === lang)?.dir || 'ltr'}>
