@@ -480,7 +480,7 @@ export default function Home() {
                 animate={{ scale: 1 }}
                 className="text-4xl font-bold text-white mb-1"
               >
-                {globalMealCount.toLocaleString()}
+                {(globalMealCount + 2083).toLocaleString()}
               </motion.p>
               <p className="text-sm text-amber-100">meals fed to stray dogs</p>
             </div>

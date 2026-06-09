@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Heart } from 'lucide-react';
 import { useLanguage, LANGUAGES } from '@/lib/LanguageContext';
+import { base44 } from '@/api/base44Client';
 
 const factsByLang = {
   en: ["600 million stray dogs roam the world today","A single meal costs less than a cup of coffee","Your ads fund real meals for real dogs","Together we've fed thousands of strays worldwide"],
@@ -43,7 +44,6 @@ export default function Welcome() {
 
   const facts = factsByLang[lang] || factsByLang.en;
   const goToRegister = () => navigate(createPageUrl('Register'));
-  const goToLogin = () => {};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col relative overflow-hidden" dir={LANGUAGES.find(l => l.code === lang)?.dir || 'ltr'}>
@@ -190,7 +190,7 @@ export default function Welcome() {
           {t('splash_cta')}
         </button>
         <button
-          onClick={goToLogin}
+          onClick={() => base44.auth.redirectToLogin()}
           className="w-full max-w-sm bg-white/10 hover:bg-white/20 border border-white/30 text-amber-100 font-semibold px-8 py-4 rounded-2xl text-base transition-all active:scale-95"
         >
           Already have an account? Log in
@@ -202,13 +202,13 @@ export default function Welcome() {
         {/* Portal navigation */}
         <div className="flex gap-3 mt-2">
           <button
-            onClick={() => window.location.href = '/FeederGate'}
+            onClick={() => navigate('/FeederGate')}
             className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 text-xs font-medium px-4 py-2 rounded-xl transition-all"
           >
             🐾 Feeders Portal
           </button>
           <button
-            onClick={() => window.location.href = '/DevPortal'}
+            onClick={() => navigate('/DevPortal')}
             className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 text-xs font-medium px-4 py-2 rounded-xl transition-all"
           >
             💻 Developers Portal

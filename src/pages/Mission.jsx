@@ -138,13 +138,13 @@ export default function Mission() {
             </p>
             <div className="grid grid-cols-3 gap-4 mt-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-amber-600">50K+</p>
-                <p className="text-xs text-amber-500">Meals Served</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-amber-600">5K+</p>
-                <p className="text-xs text-amber-500">Dogs Fed</p>
-              </div>
+                 <p className="text-2xl font-bold text-amber-600">2K+</p>
+                 <p className="text-xs text-amber-500">Meals Served</p>
+               </div>
+               <div className="text-center">
+                 <p className="text-2xl font-bold text-amber-600">1000+</p>
+                 <p className="text-xs text-amber-500">Stray Dogs Fed</p>
+               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-amber-600">4</p>
                 <p className="text-xs text-amber-500">Countries</p>

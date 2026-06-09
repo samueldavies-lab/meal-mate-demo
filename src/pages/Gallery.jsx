@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dog, X, MapPin, Heart, ChevronLeft, ChevronRight, Clock, Camera, Utensils, Play } from 'lucide-react';
+import { Dog, X, MapPin, Heart, ChevronLeft, ChevronRight, Clock, Camera, Utensils, Play, Gift } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
@@ -155,6 +155,22 @@ export default function Gallery() {
     enabled: !!user?.email
   });
 
+  const { data: rewardAllocations = [] } = useQuery({
+    queryKey: ['rewardAllocations', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return await base44.entities.RewardAllocation.filter({ user_email: user.email });
+    },
+    enabled: !!user?.email
+  });
+
+  const getLatestReward = (dogId) => {
+    const dogRewards = rewardAllocations
+      .filter(r => r.dog_id === dogId && r.is_completed)
+      .sort((a, b) => new Date(b.completed_at || b.created_date) - new Date(a.completed_at || a.created_date));
+    return dogRewards[0] || null;
+  };
+
   const getMealStatus = (dog) => {
     const dogPendingMeals = pendingMeals.filter(m => m.dog_id === dog.dog_id);
     const deliveredMeals = dogPendingMeals.filter(m => m.status === 'delivered').length;
@@ -262,12 +278,24 @@ export default function Gallery() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-amber-900 truncate">{dog.dog_name}</h3>
-                <div className="flex items-center gap-1 text-amber-600 text-sm">
-                  <MapPin className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">{dog.location}</span>
-                </div>
-              </div>
+                 <h3 className="font-semibold text-amber-900 truncate">{dog.dog_name}</h3>
+                 <div className="flex items-center gap-1 text-amber-600 text-sm">
+                   <MapPin className="w-3 h-3 flex-shrink-0" />
+                   <span className="truncate">{dog.location}</span>
+                 </div>
+                 {(() => {
+                   const reward = getLatestReward(dog.dog_id);
+                   if (!reward) return null;
+                   const rewardDate = reward.completed_at || reward.created_date;
+                   const dateStr = rewardDate ? new Date(rewardDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                   return (
+                     <div className="flex items-center gap-1 mt-1">
+                       <Gift className="w-3 h-3 text-pink-500 flex-shrink-0" />
+                       <span className="text-xs text-pink-600 font-medium truncate">{reward.reward_title}{dateStr ? ` · ${dateStr}` : ''}</span>
+                     </div>
+                   );
+                 })()}
+               </div>
               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                 {(() => {
                   const status = getMealStatus(dog);
