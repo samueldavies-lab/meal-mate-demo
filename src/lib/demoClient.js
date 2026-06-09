@@ -190,7 +190,11 @@ function genDevMessages() {
 
 const seedData = {
   UserStats: [JSON.parse(JSON.stringify(initialStats))],
-  UserDog: [],
+  UserDog: [
+    { id: 'ud-1', user_email: 'demo@feedastray.org', dog_id: 'dog-1', dog_name: 'Coco', dog_photo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/90eb8fd98_WhatsAppImage2026-02-17at1923151.jpg', dog_country: 'Nepal', dog_city: 'Kathmandu', meals_provided: 47, adopted_date: daysAgo(90) },
+    { id: 'ud-2', user_email: 'demo@feedastray.org', dog_id: 'dog-3', dog_name: 'Bruno', dog_photo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/15319c2e9_WhatsAppImage2026-02-17at1923153.jpg', dog_country: 'India', dog_city: 'Delhi', meals_provided: 52, adopted_date: daysAgo(90) },
+    { id: 'ud-3', user_email: 'demo@feedastray.org', dog_id: 'dog-5', dog_name: 'Kalu', dog_photo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/df957e82c_WhatsAppImage2026-02-17at1923162.jpg', dog_country: 'Nepal', dog_city: 'Kathmandu', meals_provided: 33, adopted_date: daysAgo(90) },
+  ],
   FeederProfile: JSON.parse(JSON.stringify(initialFeederProfiles)),
   PendingMeal: [],
   SocialPost: genSocialPosts(),

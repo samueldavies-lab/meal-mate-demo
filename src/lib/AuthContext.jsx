@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
@@ -18,16 +18,39 @@ export const AuthProvider = ({ children }) => {
   const checkAppState = async () => {
     try {
       setIsLoadingPublicSettings(true);
-      setIsLoadingAuth(true);
-      const demoUser = await base44.auth.me();
-      setUser(demoUser);
-      setIsAuthenticated(true);
-      setAppPublicSettings({ id: 'demo-app', public_settings: {} });
-    } catch (e) {
-      console.error('Demo auth error:', e);
-      setAuthError({ type: 'unknown', message: 'Failed to start demo' });
-    } finally {
+      setAuthError(null);
+
+      await new Promise(r => setTimeout(r, 800));
+
+      setAppPublicSettings({
+        id: '6989e83e8a88fafc135e714b',
+        public_settings: { allow_registration: true },
+      });
+
+      if (base44.auth.isAuthenticated) {
+        await checkUserAuth();
+      } else {
+        setIsLoadingAuth(false);
+        setIsAuthenticated(false);
+      }
       setIsLoadingPublicSettings(false);
+    } catch (error) {
+      console.error('Demo auth error:', error);
+      setAuthError({ type: 'unknown', message: error.message });
+      setIsLoadingPublicSettings(false);
+      setIsLoadingAuth(false);
+    }
+  };
+
+  const checkUserAuth = async () => {
+    try {
+      setIsLoadingAuth(true);
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('User auth check failed:', error);
+    } finally {
       setIsLoadingAuth(false);
     }
   };

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, RotateCcw, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, LogOut, Camera, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-
-const PREFIX = 'mm_demo_';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -22,7 +20,7 @@ export default function Profile() {
         const userData = await base44.auth.me();
         setUser(userData);
       } catch (error) {
-        console.error('Failed to load user:', error);
+        base44.auth.redirectToLogin('/Profile');
       } finally {
         setIsLoading(false);
       }
@@ -51,9 +49,12 @@ export default function Profile() {
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
+      await base44.auth.updateMe({
+        full_name: data.full_name || user.full_name,
+      });
+      
       if (userStats) {
         await base44.entities.UserStats.update(userStats.id, {
-          user_name: data.full_name || userStats.user_name,
           country: data.country || userStats.country,
           avatar_url: data.avatar_url || userStats.avatar_url,
         });
@@ -62,15 +63,41 @@ export default function Profile() {
     onSuccess: () => {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
+      base44.auth.me().then(setUser);
     },
     onError: () => {
       toast.error('Failed to update profile');
     }
   });
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    try {
+      if (userStats?.id) {
+        await base44.entities.UserStats.delete(userStats.id);
+      }
+      await base44.auth.logout('/');
+      toast.success('Account deleted');
+    } catch (error) {
+      toast.error('Failed to delete account. Please contact support.');
+    }
+    setShowDeleteConfirm(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await base44.auth.logout();
+      navigate('/');
+    } catch (error) {
+      toast.error('Failed to logout');
+    }
+  };
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setFormData(prev => ({ ...prev, avatar_url: file_url }));
@@ -81,17 +108,6 @@ export default function Profile() {
 
   const handleSave = () => {
     updateMutation.mutate(formData);
-  };
-
-  const handleResetDemo = () => {
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(PREFIX)) keysToRemove.push(key);
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    toast.success('Demo data reset! Reloading...');
-    setTimeout(() => window.location.reload(), 1000);
   };
 
   const uniqueDogsCount = Object.values(
@@ -111,6 +127,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 pb-24">
+      {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 to-orange-500 px-6 pt-8 pb-12">
         <button
           onClick={() => navigate('/')}
@@ -124,11 +141,13 @@ export default function Profile() {
       </div>
 
       <div className="px-6 -mt-6">
+        {/* Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-2xl shadow-lg p-6 mb-6"
         >
+          {/* Avatar Section */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative mb-4">
               {formData.avatar_url || userStats?.avatar_url ? (
@@ -145,13 +164,20 @@ export default function Profile() {
               {isEditing && (
                 <label className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-600 text-white rounded-full p-2 cursor-pointer transition-colors">
                   <Camera className="w-4 h-4" />
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
                 </label>
               )}
             </div>
           </div>
 
+          {/* Info Section */}
           <div className="space-y-4 mb-8">
+            {/* Name */}
             <div>
               <label className="text-sm text-amber-600 font-semibold">Name</label>
               {isEditing ? (
@@ -166,11 +192,13 @@ export default function Profile() {
               )}
             </div>
 
+            {/* Email */}
             <div>
               <label className="text-sm text-amber-600 font-semibold">Email</label>
               <p className="text-gray-800 mt-1">{user.email}</p>
             </div>
 
+            {/* Country */}
             <div>
               <label className="text-sm text-amber-600 font-semibold">Country</label>
               {isEditing ? (
@@ -185,12 +213,14 @@ export default function Profile() {
               )}
             </div>
 
+            {/* Dogs Count */}
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4">
               <label className="text-sm text-amber-600 font-semibold">Dogs in Your Family</label>
               <p className="text-3xl font-bold text-amber-900 mt-2">{uniqueDogsCount}</p>
               <p className="text-sm text-amber-600 mt-1">Unique dogs you're helping</p>
             </div>
 
+            {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-xs text-blue-600 font-semibold uppercase">Meals Provided</p>
@@ -203,6 +233,7 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* Edit/Save Buttons */}
           {!isEditing ? (
             <Button
               onClick={() => {
@@ -232,30 +263,89 @@ export default function Profile() {
                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-semibold"
               >
                 {updateMutation.isPending ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
-                ) : 'Save Changes'}
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           )}
         </motion.div>
 
+        {/* Logout Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="space-y-3"
         >
           <Button
-            onClick={handleResetDemo}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-6 rounded-2xl text-lg font-semibold shadow-lg"
+            onClick={handleLogout}
+            className="w-full bg-red-500 hover:bg-red-600 text-white py-6 rounded-2xl text-lg font-semibold shadow-lg"
           >
-            <RotateCcw className="w-5 h-5 mr-2" />
-            Reset Demo Data
+            <LogOut className="w-5 h-5 mr-2" />
+            Log Out
           </Button>
-          <p className="text-gray-400 text-xs text-center mt-3">
-            This will clear all demo data and reload fresh seed data
-          </p>
+          <Button
+            onClick={() => setShowDeleteConfirm(true)}
+            variant="outline"
+            className="w-full border-red-200 text-red-500 hover:bg-red-50 py-4 rounded-2xl font-medium"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Account
+          </Button>
         </motion.div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Account?</h3>
+                <p className="text-gray-500 text-sm">
+                  This will permanently delete your account and all your data — including your feeding history and adopted dogs. This cannot be undone.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Button
+                  onClick={handleDeleteAccount}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-semibold"
+                >
+                  Yes, Delete My Account
+                </Button>
+                <Button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  variant="outline"
+                  className="w-full py-4 rounded-2xl font-semibold"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
