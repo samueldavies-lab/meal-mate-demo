@@ -256,7 +256,7 @@ export default function Gallery() {
               <Dog className="w-10 h-10 text-amber-400" />
             </div>
             <h3 className="text-lg font-semibold text-amber-900 mb-2">No dogs yet</h3>
-            <p className="text-amber-600 text-sm">Watch 3 ads to provide a meal and adopt your first dog!</p>
+            <p className="text-amber-600 text-sm">Watch 5 ads to provide a meal and adopt your first dog!</p>
           </motion.div>
         )}
 

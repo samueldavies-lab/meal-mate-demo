@@ -188,8 +188,7 @@ export default function Register() {
         return;
       }
       const existing = await base44.entities.UserStats.filter({ user_email: currentUser.email });
-      const rand = Math.random();
-      const target = rand < 0.5 ? 3 : rand < 0.8 ? 4 : 5;
+      const target = 5;
 
       const statsData = {
         user_email: currentUser.email,
@@ -310,6 +309,7 @@ export default function Register() {
     return (
       <AdoptionMapModal
         isOpen={true}
+        userEmail={user?.email}
         onComplete={(dogs) => {
           setSelectedDogs(dogs);
           setStep(1);

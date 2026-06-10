@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { X, MapPin, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -19,30 +19,14 @@ const countryLocations = [
   { name: 'Nepal', lat: 27.7172, lng: 85.3240, active: true },
   { name: 'India', lat: 28.6139, lng: 77.2090, active: true },
   { name: 'South Korea', lat: 37.5665, lng: 126.9780, active: true },
+  { name: 'Thailand', lat: 13.7563, lng: 100.5018, active: true },
   { name: 'Nigeria', lat: 9.0765, lng: 7.3986, active: false },
   { name: 'Ethiopia', lat: 9.0320, lng: 38.7469, active: false },
   { name: 'Indonesia', lat: -8.3405, lng: 115.0920, active: false },
   { name: 'Turkey', lat: 41.0082, lng: 28.9784, active: false },
-  { name: 'Thailand', lat: 13.7563, lng: 100.5018, active: false },
   { name: 'Philippines', lat: 14.5995, lng: 120.9842, active: false },
   { name: 'Romania', lat: 44.4268, lng: 26.1025, active: false },
   { name: 'Brazil', lat: -22.9068, lng: -43.1729, active: false },
-];
-
-const allDogs = [
-  { id: "dog-1", name: "Coco", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/90eb8fd98_WhatsAppImage2026-02-17at1923151.jpg", country: "Nepal", city: "Kathmandu", age: "Young", gender: "female", description: "Living in a rescue shelter, Coco loves her cozy sweater and warm blankets!" },
-  { id: "dog-2", name: "Shadow", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/2e9e05909_WhatsAppImage2026-02-17at1923152.jpg", country: "Nepal", city: "Pokhara", age: "Puppy", gender: "male", description: "A playful pup found on the streets, now thriving with daily meals!" },
-  { id: "dog-3", name: "Bruno", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/15319c2e9_WhatsAppImage2026-02-17at1923153.jpg", country: "India", city: "Delhi", age: "Adult", gender: "male", description: "A friendly shelter dog with the sweetest smile, loves belly rubs!" },
-  { id: "dog-4", name: "Goldie", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/479937c32_WhatsAppImage2026-02-17at1923161.jpg", country: "India", city: "Jaipur", age: "Adult", gender: "female", description: "Lives near a local market, always eager for her daily meal!" },
-  { id: "dog-5", name: "Kalu", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/df957e82c_WhatsAppImage2026-02-17at1923162.jpg", country: "Nepal", city: "Kathmandu", age: "Adult", gender: "male", description: "A gentle giant at the rescue shelter, loves lounging on the grass." },
-  { id: "dog-6", name: "Fluffy", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/703fb21a5_WhatsAppImage2026-02-17at1923163.jpg", country: "Nepal", city: "Pokhara", age: "Young", gender: "female", description: "A sweet street dog with a fluffy tail, always wagging for treats!" },
-  { id: "dog-7", name: "Casper", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/c83f101e2_WhatsAppImage2026-02-17at192315.jpg", country: "India", city: "Mumbai", age: "Adult", gender: "male", description: "Found wandering the streets, now gets regular meals from our feeders." },
-  { id: "dog-8", name: "Patches", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/a48c07bc9_WhatsAppImage2026-02-17at1923154.jpg", country: "Nepal", city: "Bhaktapur", age: "Puppy", gender: "male", description: "An adorable puppy living on the streets, needs your help to grow strong!" },
-  { id: "dog-9", name: "Blackie", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/3e47c2d51_WhatsAppImage2026-02-17at1923165.jpeg", country: "Nepal", city: "Kathmandu", age: "Senior", gender: "male", description: "Recovering at the shelter with a leg injury, needs nutritious meals." },
-  { id: "dog-10", name: "Oreo", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/6e2ec4dba_WhatsAppImage2026-02-17at1923164.jpeg", country: "Nepal", city: "Pokhara", age: "Adult", gender: "male", description: "A calm shelter resident with soulful eyes, waiting for his next meal." },
-  { id: "dog-14", name: "Hope", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/c23588dca_WhatsAppImage2026-02-17at19231710.jpg", country: "India", city: "Chennai", age: "Adult", gender: "female", description: "Severely malnourished when found, now recovering with regular meals." },
-  { id: "dog-18", name: "Luna", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/13525cd25_WhatsAppImage2026-02-14at013153.jpg", country: "South Korea", city: "Seoul", age: "Adult", gender: "female", description: "A beautiful white dog found in the countryside, now getting regular meals." },
-  { id: "dog-20", name: "Mary", photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/mary-dog.jpg", country: "Nepal", city: "Kathmandu", age: "Adult", gender: "female", description: "A gentle street dog waiting for her daily meals." },
 ];
 
 const activeIcon = new L.DivIcon({
@@ -72,6 +56,11 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
   const [showDogs, setShowDogs] = useState(false);
   const [chosen, setChosen] = useState([]); // array of dog objects
   const queryClient = useQueryClient();
+
+  const { data: allDogs = [] } = useQuery({
+    queryKey: ['adoptionMapDogs'],
+    queryFn: () => base44.entities.StrayDog.list('-created_date', 500),
+  });
 
   const saveMutation = useMutation({
     mutationFn: async (dogs) => {

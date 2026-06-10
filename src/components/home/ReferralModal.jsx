@@ -99,7 +99,7 @@ export default function ReferralModal({ isOpen, onClose, userEmail }) {
                 <div className="text-5xl mb-3">🎁</div>
                 <h3 className="text-xl font-bold text-amber-900 mb-2">Get 5 Free Meals!</h3>
                 <p className="text-amber-700 text-sm">
-                  Share your referral link. When a friend signs up and completes their first meal (3 ads), you both get 5 bonus meals to feed dogs!
+                  Share your referral link. When a friend signs up and completes their first meal (5 ads), you both get 5 bonus meals to feed dogs!
                 </p>
               </div>
 
@@ -145,7 +145,7 @@ export default function ReferralModal({ isOpen, onClose, userEmail }) {
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="text-orange-500">•</span>
-                  They watch 3 ads to complete their first meal
+                  They watch 5 ads to complete their first meal
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="text-orange-500">•</span>

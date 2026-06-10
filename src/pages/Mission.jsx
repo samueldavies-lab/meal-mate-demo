@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     question: "How many ads do I need to watch to provide a meal?",
-    answer: "Every 3 ads you watch provides one warm chicken and rice meal for a stray dog. The meal costs approximately $0.30 to prepare and serve."
+    answer: "Every 5 ads you watch provides one warm chicken and rice meal for a stray dog. The meal costs approximately $0.30 to prepare and serve."
   },
   {
     question: "Where are the dogs being fed?",
