@@ -1,6 +1,8 @@
 const PREFIX = 'mm_demo_v2_';
 const ENT_KEY = PREFIX + 'entity_';
 const ONBOARD_KEY = PREFIX + 'onboarding_done';
+const SEED_VERSION_KEY = PREFIX + 'seed_version';
+const SEED_VERSION = '2'; // bump when seed data changes to force re-seed
 
 const DEMO_USER = {
   id: 'demo-user-1',
@@ -299,6 +301,15 @@ function saveEntities(name, data) {
 }
 
 function getEntities(name) {
+  // Check seed version — if stale, wipe all entity caches and re-seed
+  const storedVersion = localStorage.getItem(SEED_VERSION_KEY);
+  if (storedVersion !== SEED_VERSION) {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(ENT_KEY)) localStorage.removeItem(key);
+    }
+    localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
+  }
+
   let data = loadEntities(name);
   if (!data) {
     data = seedData[name] ? JSON.parse(JSON.stringify(seedData[name])) : [];

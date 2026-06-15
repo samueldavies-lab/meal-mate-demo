@@ -18,12 +18,14 @@ import AdoptionSuccessModal from '../components/onboarding/AdoptionSuccessModal'
 import ProfileSetupModal from '../components/onboarding/ProfileSetupModal';
 
 import confetti from 'canvas-confetti';
+import { useLanguage } from '@/lib/LanguageContext';
 import { createPageUrl } from '@/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function Home() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [showAdModal, setShowAdModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -295,7 +297,7 @@ export default function Home() {
   if (!user || isLoading || userStats?.needsRegistration) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 flex items-center justify-center">
-        <div className="animate-pulse text-amber-700">Loading...</div>
+        <div className="animate-pulse text-amber-700">{t('home_loading')}</div>
       </div>
     );
   }
@@ -320,7 +322,7 @@ export default function Home() {
             className="fixed top-0 left-0 right-0 flex justify-center pt-4 z-50"
           >
             <div className="bg-amber-500 text-white text-xs px-4 py-2 rounded-full shadow-lg">
-              Refreshing...
+              {t('home_refreshing')}
             </div>
           </motion.div>
         )}
@@ -333,7 +335,7 @@ export default function Home() {
           <div className="absolute top-4 right-4">
             <button
               onClick={() => navigate('/Profile')}
-              aria-label="View Profile"
+              aria-label={t('home_view_profile')}
               className="bg-white hover:bg-amber-50 text-amber-600 rounded-full p-3 shadow-md transition-all hover:scale-110 active:scale-95"
             >
               <User className="w-5 h-5" />
@@ -352,7 +354,7 @@ export default function Home() {
             transition={{ delay: 0.1 }}
             className="text-2xl font-bold text-amber-900 mb-1"
           >
-            Welcome back, {user.full_name?.split(' ')[0] || 'Hero'}!
+            {t('home_welcome_back', { name: user.full_name?.split(' ')[0] || 'Hero' })}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -360,7 +362,7 @@ export default function Home() {
             transition={{ delay: 0.2 }}
             className="text-amber-700"
           >
-            Every ad you watch feeds a stray dog
+            {t('home_subtitle')}
           </motion.p>
         </div>
       </div>
@@ -378,9 +380,9 @@ export default function Home() {
             
             <div className="mt-6 text-center">
               <p className="text-amber-800 mb-1">
-                <span className="font-semibold">{adsToNextMeal} ad{adsToNextMeal !== 1 ? 's' : ''}</span> until next meal
+                <span className="font-semibold">{adsToNextMeal} {t('home_ad_unit', { count: adsToNextMeal })}</span> {t('home_until_next_meal')}
               </p>
-              <p className="text-sm text-amber-600">A warm meal of chicken & rice for a stray dog</p>
+              <p className="text-sm text-amber-600">{t('home_meal_description')}</p>
             </div>
 
             <Button
@@ -388,7 +390,7 @@ export default function Home() {
               className="mt-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-6 rounded-2xl text-lg font-semibold shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
             >
               <Play className="w-5 h-5 mr-2" />
-              Watch Ad & Help Dogs
+              {t('home_watch_ad')}
             </Button>
           </div>
         </motion.div>
@@ -398,28 +400,28 @@ export default function Home() {
           <div onClick={() => navigate('/Gallery')} className="cursor-pointer">
             <StatsCard
               icon={Utensils}
-              label="Meals Provided"
+              label={t('home_meals_provided')}
               value={userStats?.total_meals_provided || 0}
-              subtext="Chicken & rice meals"
+              subtext={t('home_chicken_rice')}
               delay={0.3}
             />
           </div>
           <div onClick={() => navigate('/Gallery')} className="cursor-pointer">
             <StatsCard
               icon={Dog}
-              label="Dogs Fed"
+              label={t('home_dogs_fed')}
               value={uniqueUserDogs.length}
-              subtext="Unique dogs helped"
+              subtext={t('home_unique_dogs')}
               delay={0.4}
             />
           </div>
         </div>
 
         <StatsCard
-          icon={Eye}
-          label="Ads Watched"
-          value={userStats?.total_ads_watched || 0}
-          subtext="Total views"
+              icon={Eye}
+              label={t('home_ads_watched')}
+              value={userStats?.total_ads_watched || 0}
+              subtext={t('home_total_views')}
           delay={0.5}
         />
 
@@ -446,7 +448,7 @@ export default function Home() {
             className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 py-6 rounded-2xl text-lg font-semibold shadow-lg"
           >
             <Gift className="w-5 h-5 mr-2" />
-            Refer Friends - Get 5 Meals Free!
+            {t('home_refer_friends')}
           </Button>
         </motion.div>
 
@@ -462,9 +464,9 @@ export default function Home() {
           <div className="flex items-center gap-4 mb-4">
             <div className="text-4xl">💝</div>
             <div>
-              <p className="font-semibold">You're making a difference!</p>
+              <p className="font-semibold">{t('home_making_diff')}</p>
               <p className="text-sm text-amber-100">
-                Together, we've fed thousands of stray dogs worldwide
+                {t('home_together')}
               </p>
             </div>
           </div>
@@ -472,7 +474,7 @@ export default function Home() {
           {/* Global Counter */}
           <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
             <div className="text-center mb-2">
-              <p className="text-xs text-amber-100 uppercase tracking-wide mb-1">Global Impact</p>
+              <p className="text-xs text-amber-100 uppercase tracking-wide mb-1">{t('home_global_impact')}</p>
               <motion.p 
                 key={globalMealCount}
                 initial={{ scale: 1.2 }}
@@ -481,13 +483,13 @@ export default function Home() {
               >
                 {(globalMealCount + 2083).toLocaleString()}
               </motion.p>
-              <p className="text-sm text-amber-100">meals fed to stray dogs</p>
+              <p className="text-sm text-amber-100">{t('home_meals_fed')}</p>
             </div>
             
             {/* Progress to 1M */}
             <div className="mt-3">
               <div className="flex justify-between text-xs text-amber-100 mb-1">
-                <span>Progress to goal</span>
+                <span>{t('home_progress_goal')}</span>
                 <span>{((globalMealCount / 1000000) * 100).toFixed(2)}%</span>
               </div>
               <div className="bg-white/20 rounded-full h-2 overflow-hidden">
@@ -499,7 +501,7 @@ export default function Home() {
                 />
               </div>
               <p className="text-xs text-amber-100 text-center mt-2">
-                Target: <strong>1,000,000 meals</strong>
+                {t('home_target')}: <strong>1,000,000 {t('home_meals')}</strong>
               </p>
             </div>
           </div>
