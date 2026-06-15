@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Play, Plus, Minus, Grid3x3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import AdWatchingModal from '../components/home/AdWatchingModal';
 import L from 'leaflet';
@@ -140,8 +140,7 @@ function MapController({ flyTarget }) {
 
 export default function StrayMap() {
    const navigate = useNavigate();
-   const queryClient = useQueryClient();
-   const [user, setUser] = useState(null);
+    const [user, setUser] = useState(null);
    const [selectedDog, setSelectedDog] = useState(null);
    const [showAdModal, setShowAdModal] = useState(false);
    const [selectedDogForAd, setSelectedDogForAd] = useState(null);
@@ -169,22 +168,9 @@ export default function StrayMap() {
     refetchInterval: 60000
   });
 
-  const { data: userDogs = [] } = useQuery({
-    queryKey: ['userDogs', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      return await base44.entities.UserDog.filter({ user_email: user.email });
-    },
-    enabled: !!user?.email
-  });
-
-  // Filter out dogs already adopted by this user
-  const adoptedDogIds = new Set(userDogs.map(ud => ud.dog_id));
-  const availableDogs = allDogs.filter(dog => !adoptedDogIds.has(dog.id));
-
   // Assign each dog a unique spread position within its city
   const cityCounters = {};
-  const dogsWithCoords = availableDogs.map(dog => {
+  const dogsWithCoords = allDogs.map(dog => {
     const city = getDisplayCity(dog);
     const anchor = cityCoords[city];
     if (!anchor) {
@@ -213,7 +199,7 @@ export default function StrayMap() {
   const cityPins = useMemo(() => {
     const pins = [];
     const activeDogCities = {};
-    availableDogs.forEach(dog => {
+    allDogs.forEach(dog => {
       const key = `${dog.country}__${dog.city}`;
       if (!activeDogCities[key]) {
         const coords = cityCoords[dog.city] || countryLocations.find(c => c.name === dog.country);
@@ -231,7 +217,7 @@ export default function StrayMap() {
     });
 
     return pins;
-    }, [availableDogs]);
+    }, [allDogs]);
 
   const handleFeedDog = async (dog) => {
     if (!user?.email) {
@@ -264,9 +250,6 @@ export default function StrayMap() {
         meals_provided: 0,
         adopted_date: new Date().toISOString().split('T')[0]
       });
-
-      // Invalidate userDogs query to refresh the filtered list
-      queryClient.invalidateQueries({ queryKey: ['userDogs', user.email] });
 
       // Navigate to Gallery and set state to show first meal prompt
       setSelectedDog(null);
