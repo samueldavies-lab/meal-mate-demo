@@ -153,13 +153,8 @@ export default function Register() {
       if (u) {
         setUser(u);
         setFormData(prev => ({ ...prev, display_name: u?.full_name || '' }));
-        // Already authenticated — go to adoption map
-        setStep(-1);
       }
-      // If not authenticated, stay on step -2 (explainer)
-    }).catch(() => {
-      // Not authenticated, stay on step -2
-    });
+    }).catch(() => {});
   }, []);
 
   const toggle = (field, id) => {
@@ -283,10 +278,16 @@ export default function Register() {
           </div>
 
           <Button
-            onClick={() => base44.auth.redirectToSignup('/Register')}
+            onClick={() => {
+              if (user) {
+                setStep(-1);
+              } else {
+                base44.auth.redirectToSignup('/Register');
+              }
+            }}
             className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold px-6 py-4 rounded-2xl text-base shadow-lg"
           >
-            Create Free Account
+            {user ? "Let's Pick Your Dogs! 🐾" : 'Create Free Account'}
           </Button>
 
           <button
