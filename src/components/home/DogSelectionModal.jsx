@@ -28,7 +28,7 @@ const realDogs = [
   { id: "dog-20", name: "Mary",     photo_url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/mary-dog.jpg",                                                                          country: "Nepal",       city: "Kathmandu", age: "Adult",  gender: "female", description: "A gentle street dog waiting for her daily meals." }
 ];
 
-// view: 'my-dogs' | 'adopt' | 'confirm'
+// view: 'my-dogs' | 'adopt' | 'confirm' | 'confirmed'
 export default function DogSelectionModal({ isOpen, onClose, onDogSelected, userEmail, userDogs = [], fedTodayIds = [] }) {
   const [view, setView] = useState('my-dogs');
   const [selectedDog, setSelectedDog] = useState(null); // static dog data
@@ -101,10 +101,7 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
       });
 
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#F59E0B', '#EA580C', '#92400E', '#FCD34D'] });
-      onDogSelected(selectedDog);
-      setView('my-dogs');
-      setSelectedDog(null);
-      onClose();
+      setView('confirmed');
     } finally {
       setIsSubmitting(false);
     }
@@ -288,6 +285,49 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
                   {isSubmitting ? 'Feeding...' : `Feed ${selectedDog.name}! 🍖`}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Confirmed view — 72-hour message */}
+          {view === 'confirmed' && selectedDog && (
+            <div className="text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200 }}
+                className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"
+              >
+                <span className="text-4xl">✅</span>
+              </motion.div>
+              <h3 className="text-2xl font-bold text-amber-900 mb-2">Meal Scheduled! 🎉</h3>
+              <p className="text-amber-700 mb-6">
+                {selectedDog.name} will receive their meal within <strong>72 hours</strong>.
+              </p>
+              <div className="bg-amber-50 rounded-xl p-5 mb-6 border border-amber-100">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">📸</span>
+                  <p className="text-sm text-amber-800 text-left">
+                    You'll receive a <strong>photo confirmation</strong> once the meal has been delivered to {selectedDog.name}.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">⏱️</span>
+                  <p className="text-sm text-amber-800 text-left">
+                    Meals are prepared and delivered by our local feeding partners. Delivery may take up to 72 hours depending on location.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  onDogSelected(selectedDog);
+                  setView('my-dogs');
+                  setSelectedDog(null);
+                  onClose();
+                }}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 py-6 rounded-xl font-semibold text-lg"
+              >
+                Done! 🐾
+              </Button>
             </div>
           )}
         </motion.div>
