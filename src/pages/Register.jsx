@@ -432,8 +432,8 @@ export default function Register() {
               <div>
                 <Label className="text-amber-800">{t('age_range')}</Label>
                 <Select value={formData.age_range} onValueChange={v => set('age_range', v)}>
-                  <SelectTrigger className="mt-1 border-amber-200"><SelectValue placeholder={t('age_range_placeholder')} /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="mt-1 border-amber-200 text-amber-900"><SelectValue placeholder={t('age_range_placeholder')} /></SelectTrigger>
+                  <SelectContent className="text-amber-900">
                     {["13-17","18-24","25-34","35-44","45-54","55-64","65+"].map(r => (
                       <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
@@ -443,8 +443,8 @@ export default function Register() {
               <div>
                 <Label className="text-amber-800">{t('country')}</Label>
                 <Select value={formData.country} onValueChange={v => set('country', v)}>
-                  <SelectTrigger className="mt-1 border-amber-200"><SelectValue placeholder={t('country_placeholder')} /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="mt-1 border-amber-200 text-amber-900"><SelectValue placeholder={t('country_placeholder')} /></SelectTrigger>
+                  <SelectContent className="text-amber-900">
                     {countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
