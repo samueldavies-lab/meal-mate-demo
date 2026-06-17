@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Dog, ChevronRight, Check, Heart, Target, ShoppingBag, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Dog, ChevronRight, Check, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '@/utils';
+import { supabase } from '@/lib/supabaseClient';
 import { useLanguage, LANGUAGES } from '@/lib/LanguageContext';
-import AdoptionMapModal from '@/components/onboarding/AdoptionMapModal';
 
-const TOTAL_STEPS = 2; // Now just Basic Info + Interests
+const TOTAL_STEPS = 2;
 const PROFILE_START_STEP = 1;
 
 const countries = [
@@ -124,8 +124,9 @@ function ToggleGrid({ options, selected, onToggle, cols = 2 }) {
 
 export default function Register() {
   const { lang, setLang, t } = useLanguage();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [step, setStep] = useState(-2); // -2 = explainer, -1 = adoption map, 0 = account creation, 1 = basic info, 2 = interests
+  const [step, setStep] = useState(-2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDogs, setSelectedDogs] = useState([]);
   const [formData, setFormData] = useState({
@@ -149,12 +150,18 @@ export default function Register() {
   });
 
   useEffect(() => {
-    base44.auth.me().then(u => {
+    (async () => {
+      const u = await base44.auth.me();
       if (u) {
         setUser(u);
-        setFormData(prev => ({ ...prev, display_name: u?.full_name || '' }));
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.user_metadata?.display_name) {
+          setFormData(prev => ({ ...prev, display_name: user.user_metadata.display_name }));
+        }
+      } else {
+        navigate('/Login');
       }
-    }).catch(() => {});
+    })();
   }, []);
 
   const toggle = (field, id) => {
@@ -171,7 +178,6 @@ export default function Register() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Re-fetch user in case state wasn't populated yet
       let currentUser = user;
       if (!currentUser) {
         currentUser = await base44.auth.me();
@@ -179,7 +185,7 @@ export default function Register() {
       }
       if (!currentUser) {
         setIsSubmitting(false);
-        base44.auth.redirectToLogin('/Register');
+        navigate('/Login');
         return;
       }
       const existing = await base44.entities.UserStats.filter({ user_email: currentUser.email });
@@ -218,7 +224,7 @@ export default function Register() {
         await base44.entities.UserStats.create(statsData);
       }
 
-      window.location.href = createPageUrl('Home');
+      navigate('/Home');
     } catch (e) {
       console.error(e);
     } finally {
@@ -278,94 +284,13 @@ export default function Register() {
           </div>
 
           <Button
-            onClick={() => {
-              if (user) {
-                setStep(-1);
-              } else {
-                base44.auth.redirectToSignup('/Register');
-              }
-            }}
+            onClick={() => setStep(1)}
             className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold px-6 py-4 rounded-2xl text-base shadow-lg"
           >
-            {user ? "Let's Pick Your Dogs! 🐾" : 'Create Free Account'}
+            Set Up Your Profile 🐾
           </Button>
 
-          <button
-            onClick={() => base44.auth.redirectToLogin('')}
-            className="w-full mt-3 bg-white/10 hover:bg-white/20 border border-white/30 text-amber-100 font-semibold px-6 py-4 rounded-2xl text-sm transition-all"
-          >
-            Log in
-          </button>
-
           <p className="text-amber-400/70 text-xs text-center mt-4">
-            🔒 Free forever. Your data is never sold.
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // STEP -1: Adoption Map
-  if (step === -1) {
-    return (
-      <AdoptionMapModal
-        isOpen={true}
-        userEmail={user?.email}
-        onComplete={(dogs) => {
-          setSelectedDogs(dogs);
-          setStep(1);
-        }}
-      />
-    );
-  }
-
-  // STEP 0: Account creation — shown before user is authenticated
-  if (step === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col items-center justify-center px-6" dir={dir}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-sm"
-        >
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl mb-4">
-              <span className="text-4xl">🐕</span>
-            </div>
-            <h1 className="text-3xl font-black text-white text-center">Feed a Stray</h1>
-            <p className="text-amber-200 text-center mt-2 text-sm">Create a free account to start feeding stray dogs with every ad you watch.</p>
-          </div>
-
-          {/* Account creation card */}
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 mb-4">
-            <h2 className="text-white font-bold text-lg mb-1 text-center">Create Your Account</h2>
-            <p className="text-amber-200 text-xs text-center mb-6">It's completely free — no credit card needed</p>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => base44.auth.redirectToSignup('/Register')}
-                className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold px-6 py-4 rounded-2xl text-base shadow-lg transition-all active:scale-95"
-              >
-                ✉️ Sign up with Email
-              </button>
-
-              <div className="flex items-center gap-3 my-1">
-                <div className="flex-1 h-px bg-white/20" />
-                <span className="text-amber-300 text-xs">or</span>
-                <div className="flex-1 h-px bg-white/20" />
-              </div>
-
-              <button
-                onClick={() => base44.auth.redirectToLogin('/Register')}
-                className="w-full bg-white/10 hover:bg-white/20 border border-white/30 text-amber-100 font-semibold px-6 py-4 rounded-2xl text-base transition-all active:scale-95"
-              >
-                Already have an account? Log in
-              </button>
-            </div>
-          </div>
-
-          <p className="text-amber-400/70 text-xs text-center">
             🔒 Free forever. Your data is never sold.
           </p>
         </motion.div>

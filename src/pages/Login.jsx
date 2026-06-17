@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, supabaseClient } from '@/lib/supabaseClient';
-import { createPageUrl } from '@/utils';
-import { Mail, Lock, Dog, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode') || 'login';
 
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [isSignup, setIsSignup] = useState(mode === 'signup');
@@ -22,17 +21,51 @@ export default function Login() {
     setLoading(true);
     try {
       if (isSignup) {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+        const sanitized = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+        const email = `${sanitized}-${Date.now()}@meal-mate.user`;
+
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { display_name: name },
+            emailRedirectTo: window.location.origin,
+          },
+        });
         if (signUpError) throw signUpError;
-        navigate('/Register');
-      } else {
+
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
+
+        navigate('/Register');
+      } else {
+        const identifier = name.includes('@') ? name : null;
+
+        if (!identifier) {
+          const { data: stats } = await supabase
+            .from('user_stats')
+            .select('user_email')
+            .eq('user_name', name)
+            .limit(1);
+          if (!stats?.length) throw new Error('User not found. Try your email instead.');
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: stats[0].user_email,
+            password,
+          });
+          if (signInError) throw signInError;
+        } else {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: identifier,
+            password,
+          });
+          if (signInError) throw signInError;
+        }
+
         const me = await supabaseClient.auth.me();
         if (!me) {
           navigate('/Register');
         } else {
-          const { data: stats } = await supabase.from('user_stats').select('id').eq('user_email', email).limit(1);
+          const { data: stats } = await supabase.from('user_stats').select('id').eq('user_email', me.email).limit(1);
           if (stats?.length === 0) {
             navigate('/Register');
           } else {
@@ -46,6 +79,8 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  const label = isSignup ? 'Name' : 'Name or Email';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col items-center justify-center px-6">
@@ -61,12 +96,12 @@ export default function Login() {
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-300" />
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-300" />
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            type="text"
+            placeholder={label}
+            value={name}
+            onChange={e => setName(e.target.value)}
             className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-amber-300/60 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
             required
           />
