@@ -80,8 +80,8 @@ export default function Mission() {
     setIsSubmitting(true);
     try {
       await base44.entities.DevMessage.create({
-        from_user_email: user?.email || 'anonymous',
-        from_user_name: user?.full_name || 'Anonymous',
+        user_email: user?.email || 'anonymous',
+        user_name: user?.full_name || 'Anonymous',
         message: feedbackMessage.trim(),
       });
       toast.success('Thanks for your feedback! We\'ll review it shortly.');

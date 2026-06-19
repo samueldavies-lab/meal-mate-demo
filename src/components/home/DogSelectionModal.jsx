@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, ChevronRight, Dog, Heart, ArrowLeft } from 'lucide-react';
+import { X, MapPin, ChevronRight, Dog, Heart, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import confetti from 'canvas-confetti';
@@ -31,8 +31,61 @@ const realDogs = [
 // view: 'my-dogs' | 'adopt' | 'confirm' | 'confirmed'
 export default function DogSelectionModal({ isOpen, onClose, onDogSelected, userEmail, userDogs = [], fedTodayIds = [] }) {
   const [view, setView] = useState('my-dogs');
-  const [selectedDog, setSelectedDog] = useState(null); // static dog data
+  const [selectedDog, setSelectedDog] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiBio, setAiBio] = useState(null);
+  const [isLoadingBio, setIsLoadingBio] = useState(false);
+
+  useEffect(() => {
+    if (selectedDog) {
+      fetchDogBio(selectedDog.id);
+    } else {
+      setAiBio(null);
+    }
+  }, [selectedDog]);
+
+  const fetchDogBio = async (dogId) => {
+    setIsLoadingBio(true);
+    try {
+      const bios = await base44.entities.DogBio.filter({ dog_id: dogId });
+      if (bios.length > 0) {
+        setAiBio(bios[0].bio);
+      } else {
+        setAiBio(null);
+      }
+    } catch {
+      setAiBio(null);
+    } finally {
+      setIsLoadingBio(false);
+    }
+  };
+
+  const generateAiBio = async () => {
+    if (!selectedDog) return;
+    setIsLoadingBio(true);
+    try {
+      const res = await fetch('/.netlify/functions/generate-dog-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dog_id: selectedDog.id,
+          name: selectedDog.name,
+          country: selectedDog.country,
+          city: selectedDog.city,
+          age: selectedDog.age,
+          gender: selectedDog.gender,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiBio(data.bio);
+      }
+    } catch (e) {
+      console.error('Bio generation failed:', e);
+    } finally {
+      setIsLoadingBio(false);
+    }
+  };
 
   // Map of dog_id -> UserDog record
   const userDogMap = userDogs.reduce((acc, ud) => {
@@ -68,12 +121,8 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
 
       if (existingUserDog) {
         await base44.entities.UserDog.update(existingUserDog.id, {
-          meals_provided: (existingUserDog.meals_provided || 1) + 1
-        });
-        await base44.entities.DailyFeedingLog.create({
-          user_email: userEmail,
-          dog_id: existingUserDog.id,
-          date: today
+          meals_provided: (existingUserDog.meals_provided || 1) + 1,
+          last_fed_date: today
         });
       } else {
         await base44.entities.UserDog.create({
@@ -83,8 +132,9 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
           dog_photo: selectedDog.photo_url,
           dog_country: selectedDog.country,
           dog_city: selectedDog.city,
-          meals_provided: 1,
-          adopted_date: today
+          meals_provided: 0,
+          adoption_date: today,
+          last_fed_date: today
         });
       }
 
@@ -92,16 +142,14 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
         user_email: userEmail,
         dog_id: selectedDog.id,
         dog_name: selectedDog.name,
-        dog_photo: selectedDog.photo_url,
-        dog_country: selectedDog.country,
-        dog_city: selectedDog.city,
+        scheduled_date: deliveryTime.toISOString().split('T')[0],
         status: 'pending',
-        created_at: now.toISOString(),
-        delivery_scheduled_at: deliveryTime.toISOString()
       });
 
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#F59E0B', '#EA580C', '#92400E', '#FCD34D'] });
       setView('confirmed');
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSubmitting(false);
     }
@@ -261,7 +309,25 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
               <img src={selectedDog.photo_url} alt={selectedDog.name} className="w-32 h-32 rounded-2xl object-cover mx-auto mb-4 shadow-lg" />
               <h3 className="text-2xl font-bold text-amber-900 mb-1">{selectedDog.name}</h3>
               <p className="text-amber-600 mb-2">{selectedDog.city}, {selectedDog.country}</p>
-              <p className="text-sm text-amber-700 mb-4">{selectedDog.description}</p>
+              {aiBio ? (
+                <p className="text-sm text-amber-700 mb-4">{aiBio}</p>
+              ) : isLoadingBio ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-amber-500 mb-4">
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                  Generating bio...
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <p className="text-sm text-amber-600 mb-2">{selectedDog.description}</p>
+                  <button
+                    onClick={generateAiBio}
+                    className="flex items-center gap-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-lg transition-colors mx-auto"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Generate AI Bio
+                  </button>
+                </div>
+              )}
               <div className="bg-amber-50 rounded-xl p-4 mb-6">
                 <p className="text-amber-800">
                   {userDogMap[selectedDog.id]

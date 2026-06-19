@@ -45,7 +45,7 @@ export default function Welcome() {
   const facts = factsByLang[lang] || factsByLang.en;
   const goToRegister = () => {
     localStorage.setItem('mm_demo_v2_logged_in', '1');
-    navigate(createPageUrl('Register'));
+    navigate('/Login?mode=signup');
   };
 
   return (

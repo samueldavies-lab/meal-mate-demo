@@ -79,7 +79,7 @@ export default function FeederMyDogs() {
         dog_country: dog.country,
         dog_city: dog.city,
         meals_provided: 0,
-        adopted_date: new Date().toISOString().split('T')[0]
+        adoption_date: new Date().toISOString().split('T')[0]
       });
       toast.success(`${dog.name} added to My Dogs!`);
       setShowAddDog(false);

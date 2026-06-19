@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dog, X, MapPin, Heart, ChevronLeft, ChevronRight, Clock, Camera, Utensils, Play, Gift } from 'lucide-react';
+import { Dog, X, MapPin, Heart, ChevronLeft, ChevronRight, Clock, Camera, Utensils, Play, Gift, Sparkles, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import FeedDogModal from '../components/gallery/FeedDogModal';
 
-const dogBios = {
+const fallbackBios = {
   'dog-1': { bio: 'Coco lives in a rescue shelter in Kathmandu and loves her cozy sweater and warm blankets. She is playful and friendly with everyone she meets.', feeder: 'Puja Lama' },
   'dog-2': { bio: 'Shadow was found on the streets of Pokhara as a young puppy. He is now thriving with daily meals and loves to play with anyone who visits.', feeder: 'Hari Shrestha' },
   'dog-3': { bio: 'Bruno is a friendly shelter dog in Delhi with the sweetest smile. He loves belly rubs and greets every visitor with a wagging tail.', feeder: 'Ravi Kumar' },
@@ -19,10 +19,11 @@ const dogBios = {
   'dog-10': { bio: 'Oreo is a calm shelter resident in Pokhara with soulful eyes. He is patient, well-behaved and always grateful for his next meal.', feeder: 'Hari Shrestha' },
   'dog-11': { bio: 'Ginger was rescued and is recovering at a shelter in Varanasi. She is grateful for every meal she receives and is slowly regaining her health.', feeder: 'Sunita Singh' },
   'dog-12': { bio: 'Marigold is celebrated during local festivals in Kathmandu and is loved by the community. She is a well-known and well-loved street dog.', feeder: 'Puja Lama' },
+  'dog-13': { bio: 'Rusty is a happy-go-lucky street dog in Bali who loves greeting tourists and following locals on their morning walks. He is young, healthy and full of energy.', feeder: 'Ketut Sujana' },
   'dog-14': { bio: 'Hope was severely malnourished when found in Chennai and is now recovering with regular meals. She is gentle and trusting despite her difficult start.', feeder: 'Meena Rajan' },
   'dog-15': { bio: 'Biscuit is a hungry street pup in Kolkata who depends on community feeders for survival. He is young, energetic and loves to run around.', feeder: 'Debashis Roy' },
   'dog-16': { bio: 'Mama is a street mother in Lalitpur caring for her pup. She needs extra nutrition to keep herself and her baby healthy and strong.', feeder: 'Puja Lama' },
-  'dog-17': { bio: 'Sunny is a street mum watching over her puppies at a local market in Bangalore. She is protective and devoted to keeping her family safe.', feeder: 'Kavya Nair' },
+  'dog-17': { bio: 'Sunny is a street mom watching over her puppies at a local market in Bangalore. She is protective and devoted to keeping her family safe.', feeder: 'Kavya Nair' },
   'dog-18': { bio: 'Luna is a beautiful white dog found in the countryside near Seoul. She is now getting regular meals from local feeders and is thriving.', feeder: 'Ji-young Park' },
   'dog-19': { bio: 'Midnight is a sweet black dog living on the streets of Seoul. She loves her daily meals and has become a familiar face to local feeders.', feeder: 'Ji-young Park' },
 };
@@ -114,7 +115,7 @@ export default function Gallery() {
             location: `${dog.dog_city}, ${dog.dog_country}`,
             meals: dog.meals_provided || 1,
             photo_url: dog.dog_photo,
-            adopted_date: dog.adopted_date,
+            adoption_date: dog.adoption_date,
             dog_id: dog.dog_id
           };
         }
@@ -162,6 +163,56 @@ export default function Gallery() {
       return await base44.entities.RewardAllocation.filter({ user_email: user.email });
     },
     enabled: !!user?.email
+  });
+
+  const { data: dogBios = {} } = useQuery({
+    queryKey: ['dogBios', user?.email],
+    queryFn: async () => {
+      if (!user?.email || userDogs.length === 0) return {};
+      const dogIds = userDogs.map(d => d.dog_id);
+      try {
+        const allBios = await base44.entities.DogBio.list();
+        const bioMap = {};
+        for (const record of allBios) {
+          if (dogIds.includes(record.dog_id)) {
+            bioMap[record.dog_id] = { bio: record.bio, source: 'ai' };
+          }
+        }
+        for (const id of dogIds) {
+          if (!bioMap[id] && fallbackBios[id]) {
+            bioMap[id] = { ...fallbackBios[id], source: 'fallback' };
+          }
+        }
+        return bioMap;
+      } catch {
+        const bioMap = {};
+        for (const id of dogIds) {
+          if (fallbackBios[id]) bioMap[id] = { ...fallbackBios[id], source: 'fallback' };
+        }
+        return bioMap;
+      }
+    },
+    enabled: !!user?.email && userDogs.length > 0,
+  });
+
+  const generateBioMutation = useMutation({
+    mutationFn: async (dog) => {
+      const res = await fetch('/.netlify/functions/generate-dog-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dog_id: dog.dog_id,
+          name: dog.dog_name,
+          country: dog.dog_country || dog.location?.split(', ')[1],
+          city: dog.dog_city || dog.location?.split(', ')[0],
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to generate bio');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dogBios', user?.email] });
+    },
   });
 
   const getLatestReward = (dogId) => {
@@ -437,32 +488,59 @@ export default function Gallery() {
               </div>
 
               {/* Bio & Feeder */}
-              {dogBios[selectedDog.dog_id] && (
-                <div className="bg-white/10 rounded-2xl p-4 mb-4 space-y-3">
-                  <p className="text-sm text-white/85 leading-relaxed">{dogBios[selectedDog.dog_id].bio}</p>
-                  <div className="flex items-center gap-3 pt-2 border-t border-white/10">
-                    {(() => {
-                      const feederName = dogBios[selectedDog.dog_id].feeder;
-                      const feederPhoto = getFeederPhoto(feederName);
-                      return (
-                        <>
-                          {feederPhoto ? (
-                            <img src={feederPhoto} alt={feederName} className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 flex-shrink-0" />
+              {(() => {
+                const bioData = dogBios[selectedDog.dog_id] || fallbackBios[selectedDog.dog_id];
+                if (!bioData) {
+                  return (
+                    <div className="bg-white/10 rounded-2xl p-4 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-white/50">No bio yet</p>
+                        <button
+                          onClick={() => generateBioMutation.mutate(selectedDog)}
+                          disabled={generateBioMutation.isPending}
+                          className="flex items-center gap-1.5 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {generateBioMutation.isPending ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-amber-400/30 flex items-center justify-center flex-shrink-0 border-2 border-amber-400/50">
-                              <span className="text-lg">🐾</span>
-                            </div>
+                            <Sparkles className="w-3 h-3" />
                           )}
-                          <div>
-                            <p className="text-xs text-white/50">Feeder</p>
-                            <p className="text-sm text-amber-300 font-semibold">{feederName}</p>
-                          </div>
-                        </>
-                      );
-                    })()}
+                          Generate AI Bio
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="bg-white/10 rounded-2xl p-4 mb-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-white/85 leading-relaxed">{bioData.bio}</p>
+                    </div>
+                    <div className="flex items-center gap-3 pt-2 border-t border-white/10">
+                      {(() => {
+                        const feederName = bioData.feeder;
+                        if (!feederName) return null;
+                        const feederPhoto = getFeederPhoto(feederName);
+                        return (
+                          <>
+                            {feederPhoto ? (
+                              <img src={feederPhoto} alt={feederName} className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 flex-shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-amber-400/30 flex items-center justify-center flex-shrink-0 border-2 border-amber-400/50">
+                                <span className="text-lg">🐾</span>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs text-white/50">Feeder</p>
+                              <p className="text-sm text-amber-300 font-semibold">{feederName}</p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Meal stats */}
               {(() => {

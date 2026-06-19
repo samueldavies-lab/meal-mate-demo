@@ -59,7 +59,7 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
 
   const { data: allDogs = [] } = useQuery({
     queryKey: ['adoptionMapDogs'],
-    queryFn: () => base44.entities.StrayDog.list('-created_date', 500),
+    queryFn: () => base44.entities.StrayDog.list(undefined, 500),
   });
 
   const saveMutation = useMutation({
@@ -70,11 +70,11 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
           user_email: userEmail,
           dog_id: dog.id,
           dog_name: dog.name,
-          dog_photo: dog.photo_url,
+          dog_photo: dog.photo,
           dog_country: dog.country,
           dog_city: dog.city,
           meals_provided: 0,
-          adopted_date: today,
+          adoption_date: today,
         })
       ));
     },
@@ -167,7 +167,7 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
             <div className="flex gap-2 mb-3">
               {chosen.map(dog => (
                 <div key={dog.id} className="flex-1 flex flex-col items-center">
-                  <img src={dog.photo_url} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
+                  <img src={dog.photo} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
                   <span className="text-xs text-amber-800 font-semibold mt-1">{dog.name}</span>
                 </div>
               ))}
@@ -231,7 +231,7 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
                     <div className="flex gap-2 mb-3">
                       {chosen.map(dog => (
                         <div key={dog.id} className="flex-1 flex flex-col items-center">
-                          <img src={dog.photo_url} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
+                          <img src={dog.photo} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
                           <span className="text-xs text-amber-800 font-semibold mt-1 text-center leading-tight">{dog.name}</span>
                         </div>
                       ))}
@@ -263,7 +263,7 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
                           selected ? 'border-amber-400 bg-amber-50' : full ? 'border-gray-100 bg-gray-50 opacity-50' : 'border-amber-100 bg-white hover:border-amber-300'
                         }`}
                       >
-                        <img src={dog.photo_url} alt={dog.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                        <img src={dog.photo} alt={dog.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="font-bold text-amber-900">{dog.name}</p>

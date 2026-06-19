@@ -14,19 +14,6 @@ const navItems = [
   { name: 'Mission', icon: Heart, page: 'Mission' },
 ];
 
-// Dark mode detection
-if (typeof window !== 'undefined') {
-  const applyDarkMode = () => {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-  applyDarkMode();
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyDarkMode);
-}
-
 const pageRoutes = {
   Home: '/Home',
   StrayMap: '/StrayMap',

@@ -21,7 +21,8 @@ import FeederTraining from './pages/FeederTraining';
 
 import DevPortal from './pages/DevPortal';
 import DevDashboard from './pages/DevDashboard';
-import Welcome from './pages/Welcome'
+import Welcome from './pages/Welcome';
+import Login from './pages/Login';
 import { base44 } from '@/api/base44Client';
 
 
@@ -157,6 +158,7 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         } 
       />
+      <Route path="/Login" element={<Login />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

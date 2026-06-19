@@ -56,12 +56,11 @@ export default function BulkDogSelectionModal({ isOpen, onClose, userEmail, meal
         const existingDog = userDogs.find(ud => ud.dog_id === dog.id);
         
         if (existingDog) {
-          // Increment meal count
           await base44.entities.UserDog.update(existingDog.id, {
-            meals_provided: existingDog.meals_provided + 1
+            meals_provided: existingDog.meals_provided + 1,
+            last_fed_date: today
           });
         } else {
-          // Create new UserDog entry
           await base44.entities.UserDog.create({
             user_email: userEmail,
             dog_id: dog.id,
@@ -69,8 +68,9 @@ export default function BulkDogSelectionModal({ isOpen, onClose, userEmail, meal
             dog_photo: dog.photo_url,
             dog_country: dog.country,
             dog_city: dog.city,
-            meals_provided: 1,
-            adopted_date: today
+            meals_provided: 0,
+            adoption_date: today,
+            last_fed_date: today
           });
         }
 
@@ -83,12 +83,8 @@ export default function BulkDogSelectionModal({ isOpen, onClose, userEmail, meal
           user_email: userEmail,
           dog_id: dog.id,
           dog_name: dog.name,
-          dog_photo: dog.photo_url,
-          dog_country: dog.country,
-          dog_city: dog.city,
+          scheduled_date: deliveryTime.toISOString().split('T')[0],
           status: 'pending',
-          created_at: now.toISOString(),
-          delivery_scheduled_at: deliveryTime.toISOString()
         });
       }
 

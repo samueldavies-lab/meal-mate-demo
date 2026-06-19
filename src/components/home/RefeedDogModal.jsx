@@ -22,9 +22,10 @@ export default function RefeedDogModal({ isOpen, onClose, onRefeed, userEmail, u
     setIsSubmitting(true);
 
     try {
-      // Update UserDog meals count
+      const today = new Date().toISOString().split('T')[0];
       await base44.entities.UserDog.update(selectedDog.id, {
-        meals_provided: (selectedDog.meals_provided || 1) + 1
+        meals_provided: (selectedDog.meals_provided || 1) + 1,
+        last_fed_date: today
       });
 
       // Create PendingMeal with random delivery time between 48-58 hours
@@ -36,12 +37,8 @@ export default function RefeedDogModal({ isOpen, onClose, onRefeed, userEmail, u
         user_email: userEmail,
         dog_id: selectedDog.dog_id,
         dog_name: selectedDog.dog_name,
-        dog_photo: selectedDog.dog_photo,
-        dog_country: selectedDog.dog_country,
-        dog_city: selectedDog.dog_city,
+        scheduled_date: deliveryTime.toISOString().split('T')[0],
         status: 'pending',
-        created_at: now.toISOString(),
-        delivery_scheduled_at: deliveryTime.toISOString()
       });
 
       confetti({

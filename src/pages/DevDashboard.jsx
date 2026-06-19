@@ -26,21 +26,13 @@ export default function DevDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await base44.auth.me();
-        if (!user || user.role !== 'admin') {
-          navigate('/');
-          return;
-        }
-        setIsAuthorized(true);
-      } catch {
-        navigate('/');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkAuth();
+    const authed = sessionStorage.getItem(SESSION_KEY);
+    if (!authed) {
+      navigate('/');
+      return;
+    }
+    setIsAuthorized(true);
+    setIsLoading(false);
   }, [navigate]);
 
   const { data: allStats = [], refetch: refetchStats, isFetching } = useQuery({
@@ -96,7 +88,7 @@ export default function DevDashboard() {
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_KEY);
-    navigate('/Splash');
+    navigate('/');
   };
 
   if (isLoading) {

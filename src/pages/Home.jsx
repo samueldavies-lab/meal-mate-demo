@@ -15,7 +15,7 @@ import PendingMealsNotification from '../components/home/PendingMealsNotificatio
 import FirstTimeWelcomeModal from '../components/onboarding/FirstTimeWelcomeModal';
 import AdoptionMapModal from '../components/onboarding/AdoptionMapModal';
 import AdoptionSuccessModal from '../components/onboarding/AdoptionSuccessModal';
-import ProfileSetupModal from '../components/onboarding/ProfileSetupModal';
+
 
 import confetti from 'canvas-confetti';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -40,7 +40,6 @@ export default function Home() {
   // Onboarding flow
   const [showWelcome, setShowWelcome] = useState(false);
   const [showAdoptionMap, setShowAdoptionMap] = useState(false);
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [showAdoptionSuccess, setShowAdoptionSuccess] = useState(false);
   const [newlyAdoptedDogs, setNewlyAdoptedDogs] = useState([]);
 
@@ -94,20 +93,6 @@ export default function Home() {
     enabled: !!user?.email
   });
 
-  // Get today's feeding logs to know which dogs have been fed today
-  const { data: todaysFeedingLogs = [] } = useQuery({
-    queryKey: ['todaysFeedingLogs', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const today = new Date().toISOString().split('T')[0];
-      return await base44.entities.DailyFeedingLog.filter({ 
-        user_email: user.email,
-        date: today 
-      });
-    },
-    enabled: !!user?.email
-  });
-
   // Show onboarding welcome for brand new users (registration complete but no dogs yet)
   useEffect(() => {
     if (userStats && userStats.registration_completed && allUserDogs.length === 0) {
@@ -120,6 +105,7 @@ export default function Home() {
   }, [userStats, allUserDogs, user]);
 
   // Deduplicate allUserDogs by dog_id (keep one record per unique dog)
+  const today = new Date().toISOString().split('T')[0];
   const uniqueUserDogs = Object.values(
     allUserDogs.reduce((acc, dog) => {
       if (!acc[dog.dog_id]) acc[dog.dog_id] = dog;
@@ -127,18 +113,20 @@ export default function Home() {
     }, {})
   );
 
-  // Calculate which dogs haven't been fed today
-  const fedDogIdsToday = todaysFeedingLogs.map(log => log.dog_id);
+  // Determine which dogs have been fed today via last_fed_date
+  const fedDogIdsToday = uniqueUserDogs.filter(d => d.last_fed_date === today).map(d => d.id);
   const unfedDogsToday = uniqueUserDogs.filter(dog => !fedDogIdsToday.includes(dog.id));
 
-  // Get global meal count from all users
+  // Get global meal count from all users + pending meals
   const { data: globalMealCount = 0 } = useQuery({
     queryKey: ['globalMealCount'],
     queryFn: async () => {
       const allStats = await base44.entities.UserStats.list();
-      return allStats.reduce((total, stat) => total + (stat.total_meals_provided || 0), 0);
+      const providedMeals = allStats.reduce((total, stat) => total + (stat.total_meals_provided || 0), 0);
+      const allPending = await base44.entities.PendingMeal.filter({ status: 'pending' });
+      return providedMeals + allPending.length;
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   const generateAdsTarget = () => 5;
@@ -211,8 +199,11 @@ export default function Home() {
       await base44.entities.UserStats.update(userStats.id, updates);
       return completedMeal;
     },
-    onSuccess: () => {
+    onSuccess: (completedMeal) => {
       queryClient.invalidateQueries({ queryKey: ['userStats'] });
+      if (completedMeal) {
+        queryClient.invalidateQueries({ queryKey: ['globalMealCount'] });
+      }
     }
   });
 
@@ -227,15 +218,17 @@ export default function Home() {
   const handleDogSelected = (dog) => {
     setShowDogSelection(false);
     queryClient.invalidateQueries({ queryKey: ['allUserDogs'] });
-    queryClient.invalidateQueries({ queryKey: ['todaysFeedingLogs'] });
+    queryClient.setQueryData(['userStats', user?.email], (old) => {
+      if (!old) return old;
+      return { ...old, current_progress: 0 };
+    });
+    queryClient.invalidateQueries({ queryKey: ['userStats', user?.email] });
+    queryClient.invalidateQueries({ queryKey: ['globalMealCount'] });
     
     // Check if all dogs are fed today
     setTimeout(() => {
-      const updatedFedTodayIds = todaysFeedingLogs.map(log => log.dog_id);
-      const updatedUnfedDogs = uniqueUserDogs.filter(dog => !updatedFedTodayIds.includes(dog.id));
-      
+      const updatedUnfedDogs = uniqueUserDogs.filter(d => d.last_fed_date !== today);
       if (uniqueUserDogs.length > 0 && updatedUnfedDogs.length === 0) {
-        // All dogs are fed, redirect to map to adopt more
         setShowDogSelection(false);
         navigate('/StrayMap');
       }
@@ -554,15 +547,6 @@ export default function Home() {
         onComplete={(dogs) => {
           setNewlyAdoptedDogs(dogs || []);
           setShowAdoptionMap(false);
-          setShowProfileSetup(true);
-        }}
-      />
-
-      <ProfileSetupModal
-        isOpen={showProfileSetup}
-        userEmail={user?.email}
-        onComplete={() => {
-          setShowProfileSetup(false);
           setShowAdoptionSuccess(true);
         }}
       />

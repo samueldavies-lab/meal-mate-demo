@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://afuwtrkmkidcsquusuwv.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmdXd0cmtta2lkY3NxdXVzdXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NzUwNzksImV4cCI6MjA5NjM1MTA3OX0.7ioMZ441rXM8zyejTZZ5YSxZZvydjhRtel8HXYgMRxo';
+const supabaseUrl = 'https://qbsylqashtvdbizzmkoa.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFic3lscWFzaHR2ZGJpenpta29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NzU4NTcsImV4cCI6MjA5NzI1MTg1N30.lxOqrxOa8C2TqXD70ZQnpiaGI9_4hK3thVZe0AE5wdE';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -34,6 +34,7 @@ const tableMap = {
   FeedingSession: 'feeding_sessions',
   FeedingPhotoBacklog: 'feeding_photo_backlog',
   SpecialGift: 'special_gifts',
+  DogBio: 'dog_bios',
 };
 
 function makeStore(entityName) {
@@ -103,7 +104,7 @@ export const supabaseClient = {
       return {
         id: user.id,
         email: user.email,
-        full_name: profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        full_name: profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
         role: profile?.role || user.user_metadata?.role || 'user',
       };
     },
@@ -123,7 +124,7 @@ export const supabaseClient = {
       if (data.full_name) {
         await supabase.auth.updateUser({ data: { full_name: data.full_name } });
       }
-      return this.me();
+      return supabaseClient.auth.me();
     },
     logout: async () => {
       await supabase.auth.signOut();

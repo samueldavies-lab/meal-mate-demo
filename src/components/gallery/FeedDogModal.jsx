@@ -151,29 +151,23 @@ export default function FeedDogModal({ isOpen, onClose, dog, userEmail, userStat
     setStage('done');
     try {
       const now = new Date();
+      const today = now.toISOString().split('T')[0];
       const deliveryTime = new Date(now.getTime() + (48 + Math.random() * 10) * 60 * 60 * 1000);
 
-      // Create PendingMeal for this specific dog
       await base44.entities.PendingMeal.create({
         user_email: userEmail,
         dog_id: dog.dog_id,
         dog_name: dog.dog_name,
-        dog_photo: dog.photo_url || '',
-        dog_country: dog.dog_country || dog.location?.split(', ')[1] || '',
-        dog_city: dog.dog_city || dog.location?.split(', ')[0] || '',
+        scheduled_date: deliveryTime.toISOString().split('T')[0],
         status: 'pending',
-        created_at: now.toISOString(),
-        delivery_scheduled_at: deliveryTime.toISOString(),
       });
 
-      // Update UserDog meals count
       await base44.entities.UserDog.update(dog.id, {
-        meals_provided: (dog.meals || 1) + 1
+        meals_provided: (dog.meals || 1) + 1,
+        last_fed_date: today
       });
 
-      // Update UserStats
       if (userStats?.id) {
-        const today = new Date().toISOString().split('T')[0];
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
         const lastMealDate = userStats.last_meal_date;
 

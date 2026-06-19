@@ -22,9 +22,9 @@ export default function Login() {
     try {
       if (isSignup) {
         const sanitized = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
-        const email = `${sanitized}-${Date.now()}@meal-mate.user`;
+        const email = `${sanitized}-${Date.now()}@meal-mate.app`;
 
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -32,9 +32,25 @@ export default function Login() {
             emailRedirectTo: window.location.origin,
           },
         });
-        if (signUpError) throw signUpError;
 
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (!signUpError && signUpData?.user) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) throw signInError;
+          navigate('/Register');
+          return;
+        }
+
+        const { data: rpcData, error: rpcError } = await supabase.rpc('create_user_via_rpc', {
+          user_name: sanitized,
+          user_password: password,
+          display_name: name,
+        });
+        if (rpcError) throw new Error(rpcError.message || 'Signup failed');
+
+        const rpcEmail = rpcData?.email;
+        if (!rpcEmail) throw new Error('Signup failed - no email returned');
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email: rpcEmail, password });
         if (signInError) throw signInError;
 
         navigate('/Register');

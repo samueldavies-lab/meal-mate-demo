@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Play, Plus, Minus, Grid3x3, List } from 'lucide-react';
+import { X, MapPin, Play, Plus, Minus, Grid3x3, List, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -164,8 +164,24 @@ export default function StrayMap() {
 
   const { data: allDogs = [] } = useQuery({
     queryKey: ['strayMapDogs'],
-    queryFn: () => base44.entities.StrayDog.list('-created_date', 500),
+    queryFn: () => base44.entities.StrayDog.list(undefined, 500),
     refetchInterval: 60000
+  });
+
+  const { data: dogBioMap = {} } = useQuery({
+    queryKey: ['strayMapDogBios'],
+    queryFn: async () => {
+      try {
+        const allBios = await base44.entities.DogBio.list();
+        const map = {};
+        for (const record of allBios) {
+          map[record.dog_id] = record.bio;
+        }
+        return map;
+      } catch {
+        return {};
+      }
+    },
   });
 
   // Assign each dog a unique spread position within its city
@@ -244,11 +260,11 @@ export default function StrayMap() {
         user_email: user.email,
         dog_id: dog.id,
         dog_name: dog.name,
-        dog_photo: dog.photo_url || '',
+        dog_photo: dog.photo || '',
         dog_country: dog.country,
         dog_city: dog.city,
         meals_provided: 0,
-        adopted_date: new Date().toISOString().split('T')[0]
+        adoption_date: new Date().toISOString().split('T')[0]
       });
 
       // Navigate to Gallery and set state to show first meal prompt
@@ -267,12 +283,8 @@ export default function StrayMap() {
         user_email: 'anonymous',
         dog_id: selectedDogForAd.id,
         dog_name: selectedDogForAd.name,
-        dog_photo: selectedDogForAd.photo_url || '',
-        dog_country: selectedDogForAd.country,
-        dog_city: selectedDogForAd.city,
+        scheduled_date: deliveryTime.toISOString().split('T')[0],
         status: 'pending',
-        created_at: now.toISOString(),
-        delivery_scheduled_at: deliveryTime.toISOString()
       });
     }
   };
@@ -385,7 +397,7 @@ export default function StrayMap() {
             <Marker
               key={`dog-${dog.id}`}
               position={[dog.coords.lat, dog.coords.lng]}
-              icon={dogPinIcon(dog.photo_url || '')}
+              icon={dogPinIcon(dog.photo || '')}
               eventHandlers={{ click: () => setSelectedDog(dog) }}
             />
           ) : null
@@ -429,8 +441,8 @@ export default function StrayMap() {
                       className="bg-white rounded-2xl shadow-md border border-amber-100 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
                       onClick={() => setSelectedDog(dog)}
                     >
-                      {dog.photo_url && (
-                        <img src={dog.photo_url} alt={dog.name} className="w-full h-40 object-cover" />
+                      {dog.photo && (
+                        <img src={dog.photo} alt={dog.name} className="w-full h-40 object-cover" />
                       )}
                       <div className="p-4">
                         <h3 className="font-bold text-amber-900 text-lg">{dog.name}</h3>
@@ -441,8 +453,8 @@ export default function StrayMap() {
                         {dog.age && (
                           <p className="text-xs text-amber-500 mt-1">{dog.age} · {dog.gender}</p>
                         )}
-                        {dog.description && (
-                          <p className="text-sm text-amber-700 mt-2 line-clamp-2">{dog.description}</p>
+                        {(dogBioMap[dog.id] || dog.description) && (
+                          <p className="text-sm text-amber-700 mt-2 line-clamp-2">{dogBioMap[dog.id] || dog.description}</p>
                         )}
                         <Button
                           onClick={(e) => {
@@ -476,8 +488,8 @@ export default function StrayMap() {
           >
             <div className="bg-white rounded-3xl shadow-2xl border border-amber-100 overflow-hidden max-w-md mx-auto">
               <div className="flex gap-4 p-4">
-                {selectedDog.photo_url && (
-                  <img src={selectedDog.photo_url} alt={selectedDog.name} className="w-24 h-24 rounded-2xl object-cover flex-shrink-0" />
+                {selectedDog.photo && (
+                  <img src={selectedDog.photo} alt={selectedDog.name} className="w-24 h-24 rounded-2xl object-cover flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
@@ -490,8 +502,8 @@ export default function StrayMap() {
                     <MapPin className="w-3 h-3" />
                     <span>{selectedDog.city}, {selectedDog.country}</span>
                   </div>
-                  {selectedDog.description && (
-                    <p className="text-sm text-amber-700 mt-1 line-clamp-2">{selectedDog.description}</p>
+                  {(dogBioMap[selectedDog.id] || selectedDog.description) && (
+                    <p className="text-sm text-amber-700 mt-1 line-clamp-2">{dogBioMap[selectedDog.id] || selectedDog.description}</p>
                   )}
                   {selectedDog.age && (
                     <p className="text-xs text-amber-500 mt-1">{selectedDog.age} · {selectedDog.gender}</p>
