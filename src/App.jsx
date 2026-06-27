@@ -21,6 +21,7 @@ import FeederTraining from './pages/FeederTraining';
 
 import DevPortal from './pages/DevPortal';
 import DevDashboard from './pages/DevDashboard';
+import SupporterHome from './pages/SupporterHome';
 import Welcome from './pages/Welcome';
 import Login from './pages/Login';
 import { base44 } from '@/api/base44Client';
@@ -75,7 +76,7 @@ const AuthenticatedApp = () => {
 
   // Handle authentication errors (skip for feeder/dev routes which have their own auth)
   const pathname = window.location.pathname;
-  const isExemptRoute = pathname === '/' || pathname === '/Register' || pathname.startsWith('/Feeder') || pathname.startsWith('/DevPortal') || pathname.startsWith('/DevDashboard');
+  const isExemptRoute = pathname === '/' || pathname === '/Register' || pathname.startsWith('/Feeder') || pathname.startsWith('/DevPortal') || pathname.startsWith('/DevDashboard') || pathname.startsWith('/Supporter');
   if (authError && !isExemptRoute) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
@@ -92,6 +93,9 @@ const AuthenticatedApp = () => {
       {/* Developer routes */}
       <Route path="/DevPortal" element={<DevPortal />} />
       <Route path="/DevDashboard" element={<DevDashboard />} />
+
+      {/* Supporter route */}
+      <Route path="/Supporter" element={<SupporterHome />} />
 
       {/* Feeder routes — must come BEFORE the pagesConfig loop to override it */}
       <Route path="/FeederGate" element={<FeederGate />} />

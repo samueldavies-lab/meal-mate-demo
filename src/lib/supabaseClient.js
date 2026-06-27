@@ -35,6 +35,7 @@ const tableMap = {
   FeedingPhotoBacklog: 'feeding_photo_backlog',
   SpecialGift: 'special_gifts',
   DogBio: 'dog_bios',
+  DailyActivity: 'daily_activity',
 };
 
 function makeStore(entityName) {

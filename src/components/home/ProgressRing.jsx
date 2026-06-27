@@ -5,27 +5,37 @@ export default function ProgressRing({ progress, target = 3, size = 200, strokeW
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const progressPercent = (progress / target) * 100;
+
+  const tier = progressPercent >= 100 ? 'green' : progressPercent <= 30 ? 'red' : progressPercent <= 70 ? 'amber' : 'green';
+
+  const colors = {
+    red: { from: '#F87171', to: '#E11D48', bg: '#FEE2E2' },
+    amber: { from: '#FBBF24', to: '#EA580C', bg: '#FEF3C7' },
+    green: { from: '#34D399', to: '#10B981', bg: '#D1FAE5' },
+  };
+
+  const c = colors[tier];
+  const gradientId = `progress-gradient-${tier}`;
+
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="transform -rotate-90">
-        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#F5E6D3"
+          stroke={c.bg}
           strokeWidth={strokeWidth}
         />
-        {/* Progress circle */}
         <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="url(#gradient)"
+          stroke={`url(#${gradientId})`}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           initial={{ strokeDashoffset: circumference }}
@@ -36,9 +46,9 @@ export default function ProgressRing({ progress, target = 3, size = 200, strokeW
           }}
         />
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#F59E0B" />
-            <stop offset="100%" stopColor="#EA580C" />
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={c.from} />
+            <stop offset="100%" stopColor={c.to} />
           </linearGradient>
         </defs>
       </svg>

@@ -114,14 +114,15 @@ export default function Rewards() {
       }
 
       await refetchAllocations();
-      queryClient.invalidateQueries(['rewardAllocations', user?.email]);
+      queryClient.invalidateQueries({ queryKey: ['rewardAllocations', user?.email] });
       setAllocating(null);
 
       if (isCompleted) {
-        // Prompt user to assign this reward to a dog
         setCompletedReward(allocating);
         setSelectedDogForComplete(null);
       }
+    } catch (e) {
+      console.error('Failed to allocate points:', e);
     } finally {
       setIsSubmitting(false);
     }

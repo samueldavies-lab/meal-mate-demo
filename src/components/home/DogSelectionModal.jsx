@@ -38,50 +38,32 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
 
   useEffect(() => {
     if (selectedDog) {
-      fetchDogBio(selectedDog.id);
+      fetchDogBio(selectedDog.id, selectedDog);
     } else {
       setAiBio(null);
     }
   }, [selectedDog]);
 
-  const fetchDogBio = async (dogId) => {
+  const getLocalBio = (dog) => {
+    if (!dog) return '';
+    const pronoun = dog.gender === 'male' ? 'he' : 'she';
+    const capPronoun = pronoun === 'he' ? 'He' : 'She';
+    const location = `${dog.city}, ${dog.country}`;
+    const bios = [
+      `${dog.name} is a ${dog.age.toLowerCase()} dog living in ${location}. ${capPronoun} shares the streets with a few other dogs and has a quiet spot to rest. ${capPronoun} is at a healthy weight and always greets feeders with a wagging tail.`,
+      `${dog.name} lives in ${location} where ${pronoun} is cared for by local feeders. As a ${dog.age.toLowerCase()} dog, ${pronoun} has adapted well to street life and knows the safe places to sleep and find water. ${capPronoun} is friendly and loves the daily visits from people who bring food.`,
+    ];
+    const num = parseInt(String(dog.id).replace(/\D/g, ''), 10) || 1;
+    return bios[num % bios.length];
+  };
+
+  const fetchDogBio = async (dogId, dog) => {
     setIsLoadingBio(true);
     try {
       const bios = await base44.entities.DogBio.filter({ dog_id: dogId });
-      if (bios.length > 0) {
-        setAiBio(bios[0].bio);
-      } else {
-        setAiBio(null);
-      }
+      setAiBio(bios.length > 0 ? bios[0].bio : getLocalBio(dog));
     } catch {
-      setAiBio(null);
-    } finally {
-      setIsLoadingBio(false);
-    }
-  };
-
-  const generateAiBio = async () => {
-    if (!selectedDog) return;
-    setIsLoadingBio(true);
-    try {
-      const res = await fetch('/.netlify/functions/generate-dog-bio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dog_id: selectedDog.id,
-          name: selectedDog.name,
-          country: selectedDog.country,
-          city: selectedDog.city,
-          age: selectedDog.age,
-          gender: selectedDog.gender,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAiBio(data.bio);
-      }
-    } catch (e) {
-      console.error('Bio generation failed:', e);
+      setAiBio(getLocalBio(dog));
     } finally {
       setIsLoadingBio(false);
     }
@@ -212,6 +194,7 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
                   <div className="space-y-2 mb-4">
                     {userDogs.map(dog => {
                       const isFedToday = fedTodayIds.includes(dog.id);
+                      const staticDog = realDogs.find(d => d.id === dog.dog_id);
                       return (
                         <motion.button
                           key={dog.id}
@@ -219,7 +202,6 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
                           whileTap={!isFedToday ? { scale: 0.98 } : {}}
                           onClick={() => {
                             if (!isFedToday) {
-                              const staticDog = realDogs.find(d => d.id === dog.dog_id);
                               if (staticDog) {
                                 selectDog(staticDog);
                               } else {
@@ -247,6 +229,16 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
                               <MapPin className="w-3 h-3" />
                               <span>{dog.dog_city}, {dog.dog_country}</span>
                             </div>
+                            {staticDog && (
+                              <div className="flex gap-2 mt-1">
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${staticDog.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                                  {staticDog.gender}
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700`}>
+                                  {staticDog.age}
+                                </span>
+                              </div>
+                            )}
                             {isFedToday && <p className="text-xs text-green-600 mt-0.5 font-medium">✓ Fed today</p>}
                           </div>
                           {!isFedToday && <ChevronRight className="w-5 h-5 text-amber-400 flex-shrink-0" />}
@@ -282,7 +274,7 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
               </p>
               <div className="space-y-2">
                 {newDogs.map(dog => (
-                  <motion.button
+                    <motion.button
                     key={dog.id}
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     onClick={() => selectDog(dog)}
@@ -294,6 +286,14 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
                       <div className="flex items-center gap-1 text-sm text-amber-600">
                         <MapPin className="w-3 h-3" />
                         <span>{dog.city}, {dog.country}</span>
+                      </div>
+                      <div className="flex gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${dog.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                          {dog.gender}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                          {dog.age}
+                        </span>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-amber-400 flex-shrink-0" />
@@ -309,24 +309,21 @@ export default function DogSelectionModal({ isOpen, onClose, onDogSelected, user
               <img src={selectedDog.photo_url} alt={selectedDog.name} className="w-32 h-32 rounded-2xl object-cover mx-auto mb-4 shadow-lg" />
               <h3 className="text-2xl font-bold text-amber-900 mb-1">{selectedDog.name}</h3>
               <p className="text-amber-600 mb-2">{selectedDog.city}, {selectedDog.country}</p>
-              {aiBio ? (
-                <p className="text-sm text-amber-700 mb-4">{aiBio}</p>
-              ) : isLoadingBio ? (
+              <div className="flex justify-center gap-2 mb-3">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${selectedDog.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                  {selectedDog.gender}
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                  {selectedDog.age}
+                </span>
+              </div>
+              {isLoadingBio ? (
                 <div className="flex items-center justify-center gap-2 text-sm text-amber-500 mb-4">
                   <Sparkles className="w-4 h-4 animate-pulse" />
-                  Generating bio...
+                  Loading bio...
                 </div>
               ) : (
-                <div className="mb-4">
-                  <p className="text-sm text-amber-600 mb-2">{selectedDog.description}</p>
-                  <button
-                    onClick={generateAiBio}
-                    className="flex items-center gap-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-lg transition-colors mx-auto"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    Generate AI Bio
-                  </button>
-                </div>
+                <p className="text-sm text-amber-700 mb-4">{aiBio}</p>
               )}
               <div className="bg-amber-50 rounded-xl p-4 mb-6">
                 <p className="text-amber-800">

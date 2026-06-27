@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { LogOut, BarChart2, Users, MessageSquare, RefreshCw, KeyRound } from 'lucide-react';
+import { LogOut, BarChart2, Users, MessageSquare, RefreshCw, KeyRound, GripVertical } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ComposedChart, Line } from 'recharts';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MetricCard from '../components/dev/MetricCard';
 import MessagesPanel from '../components/dev/MessagesPanel';
 import UsersTable from '../components/dev/UsersTable';
@@ -38,7 +41,7 @@ export default function DevDashboard() {
   const { data: allStats = [], refetch: refetchStats, isFetching } = useQuery({
     queryKey: ['devAllStats'],
     queryFn: () => base44.entities.UserStats.list('-last_activity_date', 500),
-    refetchInterval: 60000,
+    refetchInterval: 10000,
   });
 
   const { data: messages = [] } = useQuery({
@@ -52,6 +55,14 @@ export default function DevDashboard() {
     queryFn: () => base44.entities.DailyFeedingLog.list('-created_date', 1000),
   });
 
+  const { data: dailyActivity = [], isFetching: isActivityFetching } = useQuery({
+    queryKey: ['devDailyActivity'],
+    queryFn: () => base44.entities.DailyActivity.list('-date', 90),
+    refetchInterval: 10000,
+  });
+
+
+
   // Compute metrics
   const today = now.toISOString().split('T')[0];
   const yesterday = new Date(now - 86400000).toISOString().split('T')[0];
@@ -63,6 +74,20 @@ export default function DevDashboard() {
   const weeklyActive = allStats.filter(u => u.last_activity_date >= weekAgo).length;
   const totalMeals = allStats.reduce((s, u) => s + (u.total_meals_provided || 0), 0);
   const totalAds = allStats.reduce((s, u) => s + (u.total_ads_watched || 0), 0);
+  const totalServerHours = Math.floor(totalAds / 5) * 3;
+  const totalServerDays = Math.floor(totalServerHours / 24);
+  const remainingServerHours = totalServerHours % 24;
+  const supporterUsers = allStats.filter(u => (u.total_ads_watched || 0) > 0 && (u.total_meals_provided || 0) === 0);
+  const supporterAds = supporterUsers.reduce((s, u) => s + (u.total_ads_watched || 0), 0);
+  const regularAds = totalAds - supporterAds;
+  const devSupportAds = dailyActivity.reduce((s, r) => s + (r.dev_support_ads || 0), 0);
+  const regularRevenue = +(regularAds * 0.022).toFixed(2);
+  const regularProfit = +(Math.floor(regularAds / 5) * 0.022).toFixed(2);
+  const supporterRevenue = +(supporterAds * 0.022).toFixed(2);
+  const devSupportRevenue = +(devSupportAds * 0.022).toFixed(2);
+  const devSupportProfit = +(devSupportAds * 0.022).toFixed(2);
+  const totalRevenue = +((totalAds + devSupportAds) * 0.022).toFixed(2);
+  const totalProfit = +(regularProfit + devSupportProfit).toFixed(2);
   const avgStreak = allStats.length
     ? (allStats.reduce((s, u) => s + (u.current_streak || 0), 0) / allStats.length).toFixed(1)
     : 0;
@@ -78,13 +103,128 @@ export default function DevDashboard() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  // Daily feeding trend (last 7 days)
-  const trendDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now - (6 - i) * 86400000).toISOString().split('T')[0];
-    const count = feedingLogs.filter(l => l.date === d || (l.created_date || '').startsWith(d)).length;
-    return { date: d.slice(5), count };
+  // Draggable card order (persisted to localStorage)
+  const defaultTopOrder = ['registeredUsers','dailyActive','weeklyActive','openMessages'];
+  const defaultMidOrder = ['totalMeals','totalAds','serverHours','avgStreak','countries'];
+  const defaultRevOrder = ['regularAds','devSupport','totalRevenue','totalProfit'];
+  const [topOrder, setTopOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dev_order_top') || 'null') || defaultTopOrder; }
+    catch { return defaultTopOrder; }
   });
-  const trendMax = Math.max(...trendDays.map(d => d.count), 1);
+  const [midOrder, setMidOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dev_order_mid') || 'null') || defaultMidOrder; }
+    catch { return defaultMidOrder; }
+  });
+  const [revOrder, setRevOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dev_order_rev') || 'null') || defaultRevOrder; }
+    catch { return defaultRevOrder; }
+  });
+  useEffect(() => { localStorage.setItem('dev_order_top', JSON.stringify(topOrder)); }, [topOrder]);
+  useEffect(() => { localStorage.setItem('dev_order_mid', JSON.stringify(midOrder)); }, [midOrder]);
+  useEffect(() => { localStorage.setItem('dev_order_rev', JSON.stringify(revOrder)); }, [revOrder]);
+
+  const onDragEnd = useCallback((result) => {
+    if (!result.destination) return;
+    const setters = { top: setTopOrder, mid: setMidOrder, rev: setRevOrder };
+    const setter = setters[result.source.droppableId];
+    if (!setter) return;
+    setter(prev => {
+      const next = Array.from(prev);
+      const [removed] = next.splice(result.source.index, 1);
+      next.splice(result.destination.index, 0, removed);
+      return next;
+    });
+  }, []);
+
+  const topCards = [
+    { id: 'registeredUsers', el: <MetricCard icon="👤" label="Registered Users" value={registeredUsers} color="indigo" delay={0} /> },
+    { id: 'dailyActive', el: <MetricCard icon="🔥" label="Daily Active" value={dailyActive} sub={`${yesterdayActive} yesterday`} color="amber" delay={0.05} /> },
+    { id: 'weeklyActive', el: <MetricCard icon="📅" label="Weekly Active" value={weeklyActive} color="green" delay={0.1} /> },
+    { id: 'openMessages', el: <MetricCard icon="💬" label="Open Messages" value={openMessages} sub={`${unreadMessages} unread`} color="rose" delay={0.15} /> },
+  ];
+  const sortedTop = [...topCards].sort((a, b) => topOrder.indexOf(a.id) - topOrder.indexOf(b.id));
+
+  const midCards = [
+    { id: 'totalMeals', el: <MetricCard icon="🍚" label="Total Meals" value={totalMeals.toLocaleString()} color="amber" delay={0.2} /> },
+    { id: 'totalAds', el: <MetricCard icon="📺" label="Total Ads Watched" value={totalAds.toLocaleString()} color="sky" delay={0.25} /> },
+    { id: 'serverHours', el: <MetricCard icon="⚡" label="Server Hours" value={totalServerDays > 0 ? `${totalServerDays}d ${remainingServerHours}h` : `${totalServerHours}h`} sub="from all ad views" color="indigo" delay={0.27} /> },
+    { id: 'avgStreak', el: <MetricCard icon="⚡" label="Avg Streak" value={avgStreak + ' days'} color="purple" delay={0.3} /> },
+    { id: 'countries', el: <MetricCard icon="🌍" label="Countries" value={Object.keys(countryCount).length} color="green" delay={0.35} /> },
+  ];
+  const sortedMid = [...midCards].sort((a, b) => midOrder.indexOf(a.id) - midOrder.indexOf(b.id));
+
+  const revCards = [
+    { id: 'regularAds', el: <MetricCard icon="📺" label="Regular Ads" value={regularAds.toLocaleString()} sub={`${regularAds > 0 ? `$${regularRevenue} rev / $${regularProfit} profit (1 in 5)` : 'no data'}`} color="amber" delay={0.3} /> },
+    { id: 'devSupport', el: <MetricCard icon="💙" label="Dev Support Ads" value={devSupportAds.toLocaleString()} sub={`${devSupportAds > 0 ? `$${devSupportRevenue} rev / $${devSupportProfit} profit (100%)` : 'no data'}`} color="blue" delay={0.33} /> },
+    { id: 'totalRevenue', el: <MetricCard icon="💰" label="Total Revenue" value={`$${totalRevenue}`} color="green" delay={0.34} /> },
+    { id: 'totalProfit', el: <MetricCard icon="📈" label="Total Profit" value={`$${totalProfit}`} sub={`${totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(0)}% margin` : ''}`} color="green" delay={0.36} /> },
+  ];
+  const sortedRev = [...revCards].sort((a, b) => revOrder.indexOf(a.id) - revOrder.indexOf(b.id));
+
+  // Daily activity data (last 30 days)
+  const activityByDate = {};
+  for (const r of dailyActivity) {
+    activityByDate[r.date.slice(5)] = r;
+  }
+
+  const chartDays = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(now - (29 - i) * 86400000).toISOString().split('T')[0];
+    const realUsers = allStats.filter(u => u.last_activity_date === d).length;
+    const feedCount = feedingLogs.filter(l => l.date === d || (l.created_date || '').startsWith(d)).length;
+    const dateStr = d.slice(5);
+
+    let users = realUsers;
+
+    const record = activityByDate[dateStr];
+    let rawAds = record ? (record.ads_watched || 0) : 0;
+    const rawDevAds = record ? (record.dev_support_ads || 0) : 0;
+
+    return { date: dateStr, users, feeds: feedCount, rawAds, rawDevAds };
+  });
+
+  for (const day of chartDays) {
+    day.devAds = day.rawDevAds;
+    day.ads = day.rawAds;
+    day.mealAds = Math.max(0, day.ads - day.devAds);
+  }
+
+  function linearRegression(data, key) {
+    const n = data.length;
+    const indices = data.map((_, i) => i);
+    const values = data.map(d => d[key]);
+    const sumX = indices.reduce((s, x) => s + x, 0);
+    const sumY = values.reduce((s, y) => s + y, 0);
+    const sumXY = indices.reduce((s, x, i) => s + x * values[i], 0);
+    const sumX2 = indices.reduce((s, x) => s + x * x, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    return indices.map(x => +(slope * x + intercept).toFixed(1));
+  }
+
+  const trendUsers = linearRegression(chartDays, 'users');
+  const chartData = chartDays.map((d, i) => ({ ...d, trend: trendUsers[i] }));
+
+  // Auto-record today's snapshot + ad count metadata (preserving values written by portal pages)
+  useEffect(() => {
+    if (allStats.length === 0) return;
+    const todayStr = now.toISOString().split('T')[0];
+    const existing = dailyActivity.find(r => r.date === todayStr);
+
+    const payload = {
+      date: todayStr,
+      active_users: dailyActive,
+      regular_ads: regularAds,
+      supporter_ads: supporterAds,
+      ads_watched: existing?.ads_watched || 0,
+      dev_support_ads: existing?.dev_support_ads || 0,
+    };
+
+    if (existing) {
+      base44.entities.DailyActivity.update(existing.id, payload).catch(() => {});
+    } else {
+      base44.entities.DailyActivity.create(payload).catch(() => {});
+    }
+  }, [dailyActivity, allStats]);
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_KEY);
@@ -164,49 +304,134 @@ export default function DevDashboard() {
         {/* OVERVIEW TAB */}
         {tab === 'overview' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <MetricCard icon="👤" label="Registered Users" value={registeredUsers} color="indigo" delay={0} />
-              <MetricCard icon="🔥" label="Daily Active" value={dailyActive} sub={`${yesterdayActive} yesterday`} color="amber" delay={0.05} />
-              <MetricCard icon="📅" label="Weekly Active" value={weeklyActive} color="green" delay={0.1} />
-              <MetricCard icon="💬" label="Open Messages" value={openMessages} sub={`${unreadMessages} unread`} color="rose" delay={0.15} />
-            </div>
+            {(isFetching || isActivityFetching) ? (
+              <div className="space-y-4 mb-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+                </div>
+              </div>
+            ) : (
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="top" direction="horizontal">
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                      {sortedTop.map((card, index) => (
+                        <Draggable key={card.id} draggableId={card.id} index={index}>
+                          {(provided) => (
+                            <div ref={provided.innerRef} {...provided.draggableProps} className="relative group">
+                              <div {...provided.dragHandleProps} className="absolute -top-1 -left-1 z-10 p-0.5 bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                                <GripVertical className="w-3 h-3 text-gray-400" />
+                              </div>
+                              {card.el}
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <MetricCard icon="🍚" label="Total Meals" value={totalMeals.toLocaleString()} color="amber" delay={0.2} />
-              <MetricCard icon="📺" label="Total Ads Watched" value={totalAds.toLocaleString()} color="sky" delay={0.25} />
-              <MetricCard icon="⚡" label="Avg Streak" value={avgStreak + ' days'} color="purple" delay={0.3} />
-              <MetricCard icon="🌍" label="Countries" value={Object.keys(countryCount).length} color="green" delay={0.35} />
-            </div>
+                <Droppable droppableId="mid" direction="horizontal">
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                      {sortedMid.map((card, index) => (
+                        <Draggable key={card.id} draggableId={card.id} index={index}>
+                          {(provided) => (
+                            <div ref={provided.innerRef} {...provided.draggableProps} className="relative group">
+                              <div {...provided.dragHandleProps} className="absolute -top-1 -left-1 z-10 p-0.5 bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                                <GripVertical className="w-3 h-3 text-gray-400" />
+                              </div>
+                              {card.el}
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Activity Trend */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">💰 Revenue &amp; Profit</h3>
+                  <Droppable droppableId="rev" direction="horizontal">
+                    {(provided) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {sortedRev.map((card, index) => (
+                          <Draggable key={card.id} draggableId={card.id} index={index}>
+                            {(provided) => (
+                              <div ref={provided.innerRef} {...provided.draggableProps} className="relative group">
+                                <div {...provided.dragHandleProps} className="absolute -top-1 -left-1 z-10 p-0.5 bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                                  <GripVertical className="w-3 h-3 text-gray-400" />
+                                </div>
+                                {card.el}
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              </DragDropContext>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Users Chart */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
                 className="bg-gray-900 border border-gray-800 rounded-2xl p-5"
               >
-                <h3 className="text-sm font-semibold text-gray-300 mb-4">Feeding Activity — Last 7 Days</h3>
-                <div className="flex items-end gap-2 h-32">
-                  {trendDays.map((d, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">{d.count}</span>
-                      <div
-                        className="w-full bg-indigo-600/70 rounded-t-md transition-all"
-                        style={{ height: `${(d.count / trendMax) * 100}%`, minHeight: d.count > 0 ? '4px' : '2px' }}
-                      />
-                      <span className="text-[10px] text-gray-600">{d.date}</span>
-                    </div>
-                  ))}
-                </div>
+                <h3 className="text-sm font-semibold text-gray-300 mb-4">Active Users — Last 30 Days</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <ComposedChart data={chartData}>
+                    <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+                    <XAxis dataKey="date" stroke="#9CA3AF" tick={{ fontSize: 12 }} interval={4} />
+                    <YAxis stroke="#9CA3AF" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                      labelStyle={{ color: '#F3F4F6' }}
+                    />
+                    <Bar dataKey="users" fill="#6366F1" name="Active Users" radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="trend" stroke="#10B981" strokeWidth={2} dot={false} name="Trend" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </motion.div>
+
+              {/* Ads Chart */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+                className="bg-gray-900 border border-gray-800 rounded-2xl p-5"
+              >
+                <h3 className="text-sm font-semibold text-gray-300 mb-4">Number of Ads Watched — Last 30 Days</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+                    <XAxis dataKey="date" stroke="#9CA3AF" tick={{ fontSize: 12 }} interval={4} />
+                    <YAxis stroke="#9CA3AF" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                      labelStyle={{ color: '#F3F4F6' }}
+                    />
+                    <Bar dataKey="devAds" stackId="ads" fill="#3B82F6" name="Dev Support Ads" />
+                    <Bar dataKey="mealAds" stackId="ads" fill="#F59E0B" name="Dog Meal Ads" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </motion.div>
 
               {/* Top Countries */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45 }}
+                transition={{ delay: 0.5 }}
                 className="bg-gray-900 border border-gray-800 rounded-2xl p-5"
               >
                 <h3 className="text-sm font-semibold text-gray-300 mb-4">Top Countries by Users</h3>

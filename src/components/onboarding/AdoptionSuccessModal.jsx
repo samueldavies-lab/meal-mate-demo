@@ -3,6 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 
+const AGES = ['Puppy', 'Young', 'Adult', 'Senior'];
+
+const dogGender = (dog) => {
+  if (dog.gender) return dog.gender;
+  const num = parseInt(String(dog.id || dog.dog_id).replace(/\D/g, ''), 10) || 1;
+  return num % 2 === 0 ? 'female' : 'male';
+};
+
+const dogAge = (dog) => {
+  if (dog.age) return dog.age;
+  const num = parseInt(String(dog.id || dog.dog_id).replace(/\D/g, ''), 10) || 1;
+  return AGES[num % AGES.length];
+};
+
 const DOG_PHOTOS = {
   'Coco': 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/90eb8fd98_WhatsAppImage2026-02-17at1923151.jpg',
   'Shadow': 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6989e83e8a88fafc135e714b/2e9e05909_WhatsAppImage2026-02-17at1923152.jpg',
@@ -63,16 +77,24 @@ export default function AdoptionSuccessModal({ isOpen, dogs = [], onClose }) {
             <div className="p-6">
               {dogs.length > 0 && (
                 <div className="flex justify-center gap-4 mb-5">
-                  {dogs.map(dog => (
-                    <div key={dog.id} className="flex flex-col items-center">
-                      <img
-                        src={getDogPhoto(dog)}
-                        alt={dog.name || dog.dog_name}
-                        className="w-16 h-16 rounded-full object-cover border-3 border-emerald-300 shadow-md"
-                      />
-                      <span className="text-xs font-semibold text-amber-800 mt-1">{dog.name || dog.dog_name}</span>
-                    </div>
-                  ))}
+                  {dogs.map(dog => {
+                    const g = dogGender(dog);
+                    const a = dogAge(dog);
+                    return (
+                      <div key={dog.id} className="flex flex-col items-center">
+                        <img
+                          src={getDogPhoto(dog)}
+                          alt={dog.name || dog.dog_name}
+                          className="w-16 h-16 rounded-full object-cover border-3 border-emerald-300 shadow-md"
+                        />
+                        <span className="text-xs font-semibold text-amber-800 mt-1">{dog.name || dog.dog_name}</span>
+                        <div className="flex gap-1 mt-0.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${g === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>{g}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">{a}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

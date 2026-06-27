@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, LogOut, Camera, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSupporter = searchParams.get('from') === 'supporter';
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
@@ -119,25 +121,25 @@ export default function Profile() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 flex items-center justify-center">
-        <div className="animate-pulse text-amber-700">Loading...</div>
+      <div className={`min-h-screen bg-gradient-to-b ${isSupporter ? 'from-indigo-50 to-violet-50' : 'from-amber-50 to-orange-50'} flex items-center justify-center`}>
+        <div className={`animate-pulse ${isSupporter ? 'text-indigo-700' : 'text-amber-700'}`}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 pb-24">
+    <div className={`min-h-screen bg-gradient-to-b ${isSupporter ? 'from-indigo-50 to-violet-50' : 'from-amber-50 to-orange-50'} pb-24`}>
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-amber-500 to-orange-500 px-6 pt-8 pb-12">
+      <div className={`relative overflow-hidden bg-gradient-to-r ${isSupporter ? 'from-indigo-500 to-violet-500' : 'from-amber-500 to-orange-500'} px-6 pt-8 pb-12`}>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(isSupporter ? '/Supporter' : '/')}
           className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
           Back
         </button>
         <h1 className="text-3xl font-bold text-white">My Profile</h1>
-        <p className="text-amber-100 mt-2">View and manage your information</p>
+        <p className={`${isSupporter ? 'text-indigo-100' : 'text-amber-100'} mt-2`}>View and manage your information</p>
       </div>
 
       <div className="px-6 -mt-6">
@@ -154,15 +156,15 @@ export default function Profile() {
                 <img
                   src={formData.avatar_url || userStats?.avatar_url}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-amber-200"
+                  className={`w-24 h-24 rounded-full object-cover border-4 ${isSupporter ? 'border-indigo-200' : 'border-amber-200'}`}
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center text-4xl">
+                <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${isSupporter ? 'from-indigo-300 to-violet-400' : 'from-amber-300 to-orange-400'} flex items-center justify-center text-4xl`}>
                   🐕
                 </div>
               )}
               {isEditing && (
-                <label className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-600 text-white rounded-full p-2 cursor-pointer transition-colors">
+                <label className={`absolute bottom-0 right-0 ${isSupporter ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-full p-2 cursor-pointer transition-colors`}>
                   <Camera className="w-4 h-4" />
                   <input
                     type="file"
@@ -179,13 +181,13 @@ export default function Profile() {
           <div className="space-y-4 mb-8">
             {/* Name */}
             <div>
-              <label className="text-sm text-amber-600 font-semibold">Name</label>
+              <label className={`text-sm ${isSupporter ? 'text-indigo-600' : 'text-amber-600'} font-semibold`}>Name</label>
               {isEditing ? (
                 <input
                   type="text"
                   value={formData.full_name || user.full_name || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className={`w-full mt-1 px-3 py-2 border ${isSupporter ? 'border-indigo-200 focus:ring-indigo-500' : 'border-amber-200 focus:ring-amber-500'} rounded-lg focus:outline-none focus:ring-2`}
                 />
               ) : (
                 <p className="text-gray-800 font-semibold mt-1">{user.full_name || 'Not set'}</p>
@@ -194,19 +196,19 @@ export default function Profile() {
 
             {/* Email */}
             <div>
-              <label className="text-sm text-amber-600 font-semibold">Email</label>
+              <label className={`text-sm ${isSupporter ? 'text-indigo-600' : 'text-amber-600'} font-semibold`}>Email</label>
               <p className="text-gray-800 mt-1">{user.email}</p>
             </div>
 
             {/* Country */}
             <div>
-              <label className="text-sm text-amber-600 font-semibold">Country</label>
+              <label className={`text-sm ${isSupporter ? 'text-indigo-600' : 'text-amber-600'} font-semibold`}>Country</label>
               {isEditing ? (
                 <input
                   type="text"
                   value={formData.country || userStats?.country || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className={`w-full mt-1 px-3 py-2 border ${isSupporter ? 'border-indigo-200 focus:ring-indigo-500' : 'border-amber-200 focus:ring-amber-500'} rounded-lg focus:outline-none focus:ring-2`}
                 />
               ) : (
                 <p className="text-gray-800 mt-1">{userStats?.country || 'Not set'}</p>
@@ -214,10 +216,10 @@ export default function Profile() {
             </div>
 
             {/* Dogs Count */}
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4">
-              <label className="text-sm text-amber-600 font-semibold">Dogs in Your Family</label>
-              <p className="text-3xl font-bold text-amber-900 mt-2">{uniqueDogsCount}</p>
-              <p className="text-sm text-amber-600 mt-1">Unique dogs you're helping</p>
+            <div className={`bg-gradient-to-r ${isSupporter ? 'from-indigo-50 to-violet-50' : 'from-amber-50 to-orange-50'} rounded-lg p-4`}>
+              <label className={`text-sm ${isSupporter ? 'text-indigo-600' : 'text-amber-600'} font-semibold`}>Dogs in Your Family</label>
+              <p className={`text-3xl font-bold ${isSupporter ? 'text-indigo-900' : 'text-amber-900'} mt-2`}>{uniqueDogsCount}</p>
+              <p className={`text-sm ${isSupporter ? 'text-indigo-600' : 'text-amber-600'} mt-1`}>Unique dogs you're helping</p>
             </div>
 
             {/* Stats */}
@@ -244,7 +246,7 @@ export default function Profile() {
                   avatar_url: userStats?.avatar_url || '',
                 });
               }}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-semibold"
+              className={`w-full ${isSupporter ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-amber-500 hover:bg-amber-600'} text-white py-3 rounded-lg font-semibold`}
             >
               Edit Profile
             </Button>
@@ -253,14 +255,14 @@ export default function Profile() {
               <Button
                 onClick={() => setIsEditing(false)}
                 variant="outline"
-                className="flex-1 py-3 rounded-lg border-amber-300"
+                className={`flex-1 py-3 rounded-lg ${isSupporter ? 'border-indigo-300' : 'border-amber-300'}`}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={updateMutation.isPending}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-semibold"
+                className={`flex-1 ${isSupporter ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-amber-500 hover:bg-amber-600'} text-white py-3 rounded-lg font-semibold`}
               >
                 {updateMutation.isPending ? (
                   <>

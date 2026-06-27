@@ -306,19 +306,47 @@ CREATE TABLE special_gifts (
 
 ALTER TABLE special_gifts ENABLE ROW LEVEL SECURITY;
 
--- RLS policies: allow all access for now (MVP)
-DO $$
-DECLARE
-  tbl TEXT;
-BEGIN
-  FOR tbl IN SELECT unnest(ARRAY[
-    'profiles', 'stray_dogs', 'user_stats', 'user_dogs', 'feeder_profiles',
-    'pending_meals', 'social_posts', 'post_likes', 'reward_allocations',
-    'daily_feeding_logs', 'dev_messages', 'referrals', 'feeding_media',
-    'feeding_feedback', 'feeder_bank_details', 'access_codes', 'feeding_logs',
-    'feeding_sessions', 'feeding_photo_backlog', 'special_gifts', 'dog_bios'
-  ])
-  LOOP
-    EXECUTE format('CREATE POLICY "allow_all_%s" ON %s FOR ALL USING (true) WITH CHECK (true);', tbl, tbl);
-  END LOOP;
-END $$;
+-- Daily activity snapshots (for dev portal charts & historical tracking)
+CREATE TABLE daily_activity (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  date TEXT UNIQUE NOT NULL,
+  active_users INTEGER DEFAULT 0,
+  ads_watched INTEGER DEFAULT 0,
+  meals_provided INTEGER DEFAULT 0,
+  server_hours INTEGER DEFAULT 0,
+  regular_ads INTEGER DEFAULT 0,
+  supporter_ads INTEGER DEFAULT 0,
+  dev_support_ads INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE daily_activity ENABLE ROW LEVEL SECURITY;
+
+-- Seed data (your historical records)
+INSERT INTO daily_activity (date, ads_watched) VALUES
+  ('2026-06-01', 45),
+  ('2026-06-02', 84),
+  ('2026-06-03', 76),
+  ('2026-06-04', 97),
+  ('2026-06-05', 198),
+  ('2026-06-06', 87),
+  ('2026-06-07', 99),
+  ('2026-06-08', 123),
+  ('2026-06-09', 207),
+  ('2026-06-10', 50),
+  ('2026-06-11', 90),
+  ('2026-06-12', 179),
+  ('2026-06-13', 250),
+  ('2026-06-14', 150),
+  ('2026-06-15', 120),
+  ('2026-06-16', 90),
+  ('2026-06-17', 230),
+  ('2026-06-18', 100),
+  ('2026-06-25', 235),
+  ('2026-06-26', 399),
+  ('2026-06-27', 508)
+ON CONFLICT (date) DO NOTHING;
+
+-- RLS policy
+CREATE POLICY "allow_all_daily_activity" ON daily_activity FOR ALL USING (true) WITH CHECK (true);

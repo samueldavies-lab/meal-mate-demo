@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Utensils, Dog, Eye, Gift, User } from 'lucide-react';
+import { Play, Utensils, Dog, Eye, Gift, User, Clock, Calendar, BarChart3, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,11 +12,10 @@ import ReferralModal from '../components/home/ReferralModal';
 import BulkDogSelectionModal from '../components/home/BulkDogSelectionModal';
 import StreakTracker from '../components/home/StreakTracker';
 import PendingMealsNotification from '../components/home/PendingMealsNotification';
+import DailyDogProgress from '../components/home/DailyDogProgress';
 import FirstTimeWelcomeModal from '../components/onboarding/FirstTimeWelcomeModal';
 import AdoptionMapModal from '../components/onboarding/AdoptionMapModal';
 import AdoptionSuccessModal from '../components/onboarding/AdoptionSuccessModal';
-
-
 import confetti from 'canvas-confetti';
 import { useLanguage } from '@/lib/LanguageContext';
 import { createPageUrl } from '@/utils';
@@ -84,7 +83,7 @@ export default function Home() {
   }, [userStats]);
 
   // Get all user's dogs
-  const { data: allUserDogs = [] } = useQuery({
+  const { data: allUserDogs = [], isLoading: dogsLoading, isSuccess: dogsLoaded } = useQuery({
     queryKey: ['allUserDogs', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
@@ -95,14 +94,14 @@ export default function Home() {
 
   // Show onboarding welcome for brand new users (registration complete but no dogs yet)
   useEffect(() => {
-    if (userStats && userStats.registration_completed && allUserDogs.length === 0) {
+    if (!dogsLoading && dogsLoaded && userStats && userStats.registration_completed && allUserDogs.length === 0) {
       const key = `onboarding_shown_${user?.email}`;
       if (!localStorage.getItem(key)) {
         setShowWelcome(true);
         localStorage.setItem(key, '1');
       }
     }
-  }, [userStats, allUserDogs, user]);
+  }, [userStats, allUserDogs, user, dogsLoading]);
 
   // Deduplicate allUserDogs by dog_id (keep one record per unique dog)
   const today = new Date().toISOString().split('T')[0];
@@ -129,6 +128,22 @@ export default function Home() {
     refetchInterval: 30000
   });
 
+  // Get all meals this user has ordered for time-based stats
+  const { data: userMeals = [] } = useQuery({
+    queryKey: ['userMeals', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return await base44.entities.PendingMeal.filter({ user_email: user.email });
+    },
+    enabled: !!user?.email
+  });
+
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+  const pendingCount = userMeals.filter(m => m.status === 'pending').length;
+  const todaysMeals = userMeals.filter(m => m.status === 'delivered' && m.scheduled_date === today).length;
+  const weeklyMeals = userMeals.filter(m => m.status === 'delivered' && m.scheduled_date >= weekAgo).length;
+  const avgPerDogPerWeek = uniqueUserDogs.length > 0 ? (weeklyMeals / uniqueUserDogs.length).toFixed(1) : '0';
+
   const generateAdsTarget = () => 5;
 
   const handleReferralSignup = async (refCode) => {
@@ -154,85 +169,153 @@ export default function Home() {
     }
   };
 
-  const updateStatsMutation = useMutation({
-    mutationFn: async () => {
-      const currentTarget = userStats.current_target || 5;
-      const newProgress = userStats.current_progress + 1;
+  // Store email in ref to avoid any closure issues with mutation callbacks
+  const userEmailRef = useRef(user?.email);
+  useEffect(() => { userEmailRef.current = user?.email; }, [user?.email]);
+  const userStatsKey = useRef(['userStats', user?.email]);
+  useEffect(() => { userStatsKey.current = ['userStats', user?.email]; }, [user?.email]);
+
+  const handleAdComplete = async () => {
+    try {
+      const email = userEmailRef.current;
+      if (!email) { console.error('[Home] handleAdComplete: no user email'); return false; }
+
+      const freshStats = await base44.entities.UserStats.filter({ user_email: email });
+      if (freshStats.length === 0) {
+        toast.error('Could not find your stats. Try refreshing.');
+        return false;
+      }
+      const s = freshStats[0];
+
+      const currentTarget = s.current_target || 5;
+      const newProgress = (s.current_progress || 0) + 1;
       const completedMeal = newProgress >= currentTarget;
-      
+
       const today = new Date().toISOString().split('T')[0];
 
       const updates = {
-        total_ads_watched: (userStats.total_ads_watched || 0) + 1,
+        total_ads_watched: (s.total_ads_watched || 0) + 1,
         current_progress: completedMeal ? 0 : newProgress,
         last_activity_date: today,
       };
 
       if (completedMeal) {
-        // Only update streak when a meal is actually completed
-        const lastMealDate = userStats.last_meal_date;
+        updates.total_meals_provided = (s.total_meals_provided || 0) + 1;
+
+        const lastMealDate = s.last_meal_date;
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-        let newStreak = userStats.current_streak || 0;
+        let newStreak = s.current_streak || 0;
         if (lastMealDate === today) {
-          // Already completed a meal today — no streak change
         } else if (lastMealDate === yesterday) {
-          // Consecutive day — extend streak
           newStreak = newStreak + 1;
         } else {
-          // Streak broken or first meal ever — start fresh
           newStreak = 1;
         }
 
         updates.current_streak = newStreak;
-        updates.longest_streak = Math.max(userStats.longest_streak || 0, newStreak);
-        updates.last_meal_date = today;
-        updates.total_meals_provided = (userStats.total_meals_provided || 0) + 1;
+        updates.longest_streak = Math.max(s.longest_streak || 0, newStreak);
         updates.current_target = generateAdsTarget();
-        
-        // Check if this is first meal and user was referred
-        if ((userStats.total_meals_provided || 0) + 1 === 1) {
+
+        if ((s.total_ads_watched || 0) + 1 === 5) {
           await checkAndCompleteReferral();
         }
       }
 
-      await base44.entities.UserStats.update(userStats.id, updates);
-      return completedMeal;
-    },
-    onSuccess: (completedMeal) => {
-      queryClient.invalidateQueries({ queryKey: ['userStats'] });
+      await base44.entities.UserStats.update(s.id, updates);
+
+      // Track every ad in daily_activity so the dev dashboard chart reflects it
+      base44.entities.DailyActivity.filter({ date: today }).then(existing => {
+        if (existing.length > 0) {
+          base44.entities.DailyActivity.update(existing[0].id, {
+            ads_watched: (existing[0].ads_watched || 0) + 1,
+          }).catch(e => console.warn('[Home] daily_activity update failed:', e));
+        } else {
+          base44.entities.DailyActivity.create({
+            date: today,
+            ads_watched: 1,
+          }).catch(e => console.warn('[Home] daily_activity create failed:', e));
+        }
+      }).catch(e => console.warn('[Home] daily_activity filter failed:', e));
+
+      queryClient.setQueryData(userStatsKey.current, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          current_progress: completedMeal ? 0 : newProgress,
+          total_ads_watched: updates.total_ads_watched,
+          total_meals_provided: completedMeal
+            ? (old.total_meals_provided || 0) + 1
+            : old.total_meals_provided,
+          current_target: completedMeal ? generateAdsTarget() : old.current_target,
+          current_streak: completedMeal ? (updates.current_streak ?? old.current_streak) : old.current_streak,
+          longest_streak: completedMeal ? (updates.longest_streak ?? old.longest_streak) : old.longest_streak,
+          last_meal_date: completedMeal ? today : old.last_meal_date,
+        };
+      });
+
       if (completedMeal) {
         queryClient.invalidateQueries({ queryKey: ['globalMealCount'] });
       }
-    }
-  });
 
-  const handleAdComplete = () => {
-    updateStatsMutation.mutate();
+      return completedMeal;
+    } catch (error) {
+      console.error('[Home] handleAdComplete error:', error);
+      toast.error(`Failed to save progress: ${error.message}`);
+      return false;
+    }
   };
+
+  const handleDevAdComplete = async () => {
+    const email = userEmailRef.current;
+    const freshStats = await base44.entities.UserStats.filter({ user_email: email });
+    if (freshStats.length > 0) {
+      await base44.entities.UserStats.update(freshStats[0].id, {
+        developer_support_ads: (freshStats[0].developer_support_ads || 0) + 1,
+      });
+      // Track dev support ads in daily_activity so chart reflects them
+      const todayStr = new Date().toISOString().split('T')[0];
+      base44.entities.DailyActivity.filter({ date: todayStr }).then(existing => {
+        if (existing.length > 0) {
+          base44.entities.DailyActivity.update(existing[0].id, {
+            dev_support_ads: (existing[0].dev_support_ads || 0) + 1,
+          }).catch(e => console.warn('[Home] dev_support daily_activity update failed:', e));
+        } else {
+          base44.entities.DailyActivity.create({
+            date: todayStr,
+            dev_support_ads: 1,
+          }).catch(e => console.warn('[Home] dev_support daily_activity create failed:', e));
+        }
+      }).catch(e => console.warn('[Home] dev_support daily_activity filter failed:', e));
+    }
+  };
+
+  const updateStatsMutation = useMutation({
+    mutationFn: handleAdComplete,
+  });
 
   const handleMealComplete = () => {
     setShowDogSelection(true);
   };
 
-  const handleDogSelected = (dog) => {
+  const handleDogSelected = async (dog) => {
     setShowDogSelection(false);
     queryClient.invalidateQueries({ queryKey: ['allUserDogs'] });
+
+    const latestStats = queryClient.getQueryData(['userStats', user?.email]);
+    if (latestStats?.id) {
+      try {
+        await base44.entities.UserStats.update(latestStats.id, { current_progress: 0 });
+      } catch (e) {}
+    }
+
     queryClient.setQueryData(['userStats', user?.email], (old) => {
       if (!old) return old;
       return { ...old, current_progress: 0 };
     });
     queryClient.invalidateQueries({ queryKey: ['userStats', user?.email] });
     queryClient.invalidateQueries({ queryKey: ['globalMealCount'] });
-    
-    // Check if all dogs are fed today
-    setTimeout(() => {
-      const updatedUnfedDogs = uniqueUserDogs.filter(d => d.last_fed_date !== today);
-      if (uniqueUserDogs.length > 0 && updatedUnfedDogs.length === 0) {
-        setShowDogSelection(false);
-        navigate('/StrayMap');
-      }
-    }, 100);
+    queryClient.invalidateQueries({ queryKey: ['userMeals', user?.email] });
   };
 
   const checkAndCompleteReferral = async () => {
@@ -298,6 +381,10 @@ export default function Home() {
   const currentProgress = userStats?.current_progress || 0;
   const currentTarget = userStats?.current_target || 5;
   const adsToNextMeal = currentTarget - currentProgress;
+  const totalDogsNeedingMeals = uniqueUserDogs.length;
+  const dogsFedToday = fedDogIdsToday.length;
+  const overallAdTarget = totalDogsNeedingMeals * currentTarget;
+  const overallAdProgress = Math.min(dogsFedToday * currentTarget + currentProgress, overallAdTarget);
 
   return (
     <div
@@ -379,7 +466,10 @@ export default function Home() {
             </div>
 
             <Button
-              onClick={() => setShowAdModal(true)}
+              onClick={async () => {
+                await queryClient.refetchQueries({ queryKey: ['userStats', user?.email] });
+                setShowAdModal(true);
+              }}
               className="mt-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-6 rounded-2xl text-lg font-semibold shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
             >
               <Play className="w-5 h-5 mr-2" />
@@ -388,26 +478,54 @@ export default function Home() {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div onClick={() => navigate('/Gallery')} className="cursor-pointer">
-            <StatsCard
-              icon={Utensils}
-              label={t('home_meals_provided')}
-              value={userStats?.total_meals_provided || 0}
-              subtext={t('home_chicken_rice')}
-              delay={0.3}
-            />
-          </div>
-          <div onClick={() => navigate('/Gallery')} className="cursor-pointer">
-            <StatsCard
-              icon={Dog}
-              label={t('home_dogs_fed')}
-              value={uniqueUserDogs.length}
-              subtext={t('home_unique_dogs')}
-              delay={0.4}
-            />
-          </div>
+        {/* Overall ad progress toward feeding all dogs */}
+        {totalDogsNeedingMeals > 0 && (
+          <DailyDogProgress
+            current={overallAdProgress}
+            target={overallAdTarget}
+            dogsFed={dogsFedToday}
+            totalDogs={totalDogsNeedingMeals}
+            onAdopt={() => queryClient.invalidateQueries({ queryKey: ['allUserDogs', user?.email] })}
+            excludeDogIds={uniqueUserDogs.map(d => d.dog_id)}
+          />
+        )}
+
+        {/* Meal Stats Grid */}
+        <div className="mb-4">
+          <StatsCard
+            icon={Utensils}
+            label="meals provided"
+            value={todaysMeals}
+            subtext="today (delivered after 24-72h)"
+            delay={0.28}
+          />
+        </div>
+
+        {/* Pending Meals */}
+        <PendingMealsNotification userEmail={user?.email} />
+
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <StatsCard
+            icon={Calendar}
+            label="This Week"
+            value={weeklyMeals}
+            subtext="meals delivered"
+            delay={0.35}
+          />
+          <StatsCard
+            icon={BarChart3}
+            label="Avg/Dog/Week"
+            value={avgPerDogPerWeek}
+            subtext={`across ${uniqueUserDogs.length} dogs`}
+            delay={0.4}
+          />
+          <StatsCard
+            icon={Award}
+            label="All Time"
+            value={userStats?.total_meals_provided || 0}
+            subtext="total meals delivered"
+            delay={0.45}
+          />
         </div>
 
         <StatsCard
@@ -417,9 +535,6 @@ export default function Home() {
               subtext={t('home_total_views')}
           delay={0.5}
         />
-
-        {/* Pending Meals */}
-        <PendingMealsNotification userEmail={user?.email} />
 
         {/* Streak Tracker */}
         <div className="mt-4">
@@ -507,6 +622,7 @@ export default function Home() {
         isOpen={showAdModal}
         onClose={() => setShowAdModal(false)}
         onAdComplete={handleAdComplete}
+        onDevAdComplete={handleDevAdComplete}
         currentProgress={currentProgress}
         currentTarget={currentTarget}
         onMealComplete={handleMealComplete}

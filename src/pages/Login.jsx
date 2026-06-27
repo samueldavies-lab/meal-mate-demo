@@ -7,6 +7,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode') || 'login';
+  const isSupporter = searchParams.get('redirect') === '/Supporter';
 
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -33,10 +34,12 @@ export default function Login() {
           },
         });
 
+        const redirect = searchParams.get('redirect') || '';
+
         if (!signUpError && signUpData?.user) {
           const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
           if (signInError) throw signInError;
-          navigate('/Register');
+          navigate(`/Register${redirect ? `?redirect=${redirect}` : ''}`);
           return;
         }
 
@@ -53,7 +56,7 @@ export default function Login() {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email: rpcEmail, password });
         if (signInError) throw signInError;
 
-        navigate('/Register');
+        navigate(`/Register${redirect ? `?redirect=${redirect}` : ''}`);
       } else {
         const identifier = name.includes('@') ? name : null;
 
@@ -83,9 +86,11 @@ export default function Login() {
         } else {
           const { data: stats } = await supabase.from('user_stats').select('id').eq('user_email', me.email).limit(1);
           if (stats?.length === 0) {
-            navigate('/Register');
+            const redirect = searchParams.get('redirect');
+            navigate(`/Register${redirect ? `?redirect=${redirect}` : ''}`);
           } else {
-            navigate('/Home');
+            const redirect = searchParams.get('redirect');
+            navigate(redirect || '/Home');
           }
         }
       }
@@ -99,44 +104,44 @@ export default function Login() {
   const label = isSignup ? 'Name' : 'Name or Email';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-orange-900 flex flex-col items-center justify-center px-6">
-      <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl mb-6">
-        <span className="text-3xl">🐕</span>
+    <div className={`min-h-screen bg-gradient-to-b flex flex-col items-center justify-center px-6 ${isSupporter ? 'from-indigo-900 via-indigo-800 to-violet-900' : 'from-amber-900 via-amber-800 to-orange-900'}`}>
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl mb-6 ${isSupporter ? 'bg-gradient-to-br from-indigo-400 to-violet-500' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}>
+        <span className="text-3xl">{isSupporter ? '⚡' : '🐕'}</span>
       </div>
       <h1 className="text-2xl font-bold text-white mb-2">
-        {isSignup ? 'Create Account' : 'Welcome Back'}
+        {isSupporter ? 'Support the Platform' : isSignup ? 'Create Account' : 'Welcome Back'}
       </h1>
-      <p className="text-amber-200 text-sm mb-8">
-        {isSignup ? 'Join the pack and start feeding strays' : 'Log in to continue feeding'}
+      <p className={`text-sm mb-8 ${isSupporter ? 'text-indigo-200' : 'text-amber-200'}`}>
+        {isSupporter ? 'Watch ads to keep the servers running' : isSignup ? 'Join the pack and start feeding strays' : 'Log in to continue feeding'}
       </p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-300" />
+          <User className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isSupporter ? 'text-indigo-300' : 'text-amber-300'}`} />
           <input
             type="text"
             placeholder={label}
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-amber-300/60 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+            className={`w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none ${isSupporter ? 'focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400' : 'focus:border-amber-400 focus:ring-1 focus:ring-amber-400'}`}
             required
           />
         </div>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-300" />
+          <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isSupporter ? 'text-indigo-300' : 'text-amber-300'}`} />
           <input
             type={showPw ? 'text' : 'password'}
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full pl-11 pr-11 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-amber-300/60 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+            className={`w-full pl-11 pr-11 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none ${isSupporter ? 'focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400' : 'focus:border-amber-400 focus:ring-1 focus:ring-amber-400'}`}
             required
             minLength={6}
           />
           <button
             type="button"
             onClick={() => setShowPw(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-300 hover:text-amber-200"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 ${isSupporter ? 'text-indigo-300 hover:text-indigo-200' : 'text-amber-300 hover:text-amber-200'}`}
           >
             {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
@@ -149,17 +154,17 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold px-8 py-4 rounded-2xl text-lg shadow-2xl shadow-orange-900/50 transition-all active:scale-95 disabled:opacity-50"
+          className={`w-full text-white font-bold px-8 py-4 rounded-2xl text-lg shadow-2xl transition-all active:scale-95 disabled:opacity-50 ${isSupporter ? 'bg-gradient-to-r from-indigo-400 to-violet-500 hover:from-indigo-500 hover:to-violet-600 shadow-indigo-900/50' : 'bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 shadow-orange-900/50'}`}
         >
           {loading ? 'Please wait...' : isSignup ? 'Sign Up' : 'Log In'}
         </button>
 
-        <p className="text-center text-amber-200 text-sm">
+        <p className={`text-center text-sm ${isSupporter ? 'text-indigo-200' : 'text-amber-200'}`}>
           {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             type="button"
             onClick={() => setIsSignup(v => !v)}
-            className="text-amber-400 hover:text-amber-300 font-semibold underline underline-offset-2"
+            className={`font-semibold underline underline-offset-2 ${isSupporter ? 'text-indigo-400 hover:text-indigo-300' : 'text-amber-400 hover:text-amber-300'}`}
           >
             {isSignup ? 'Log in' : 'Sign up'}
           </button>

@@ -5,7 +5,7 @@ import { X, MapPin, Play, Plus, Minus, Grid3x3, List, Sparkles } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AdWatchingModal from '../components/home/AdWatchingModal';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -140,13 +140,15 @@ function MapController({ flyTarget }) {
 
 export default function StrayMap() {
    const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+   const location = useLocation();
+   const [user, setUser] = useState(null);
    const [selectedDog, setSelectedDog] = useState(null);
    const [showAdModal, setShowAdModal] = useState(false);
    const [selectedDogForAd, setSelectedDogForAd] = useState(null);
    const [currentZoom, setCurrentZoom] = useState(2.5);
    const [flyTarget, setFlyTarget] = useState(null);
-   const [viewMode, setViewMode] = useState('map'); // 'map' or 'list'
+   const isAdoptMode = location.state?.adoptMode;
+   const [viewMode, setViewMode] = useState(isAdoptMode ? 'list' : 'map');
    const [showExplainer, setShowExplainer] = useState(true);
 
    useEffect(() => {
@@ -249,13 +251,11 @@ export default function StrayMap() {
       });
 
       if (existingAdoption.length > 0) {
-        // Dog already adopted, just navigate to gallery
         setSelectedDog(null);
-        navigate('/Gallery', { state: { dogAdopted: dog } });
+        navigate('/');
         return;
       }
 
-      // Create UserDog record to add dog to user's family
       await base44.entities.UserDog.create({
         user_email: user.email,
         dog_id: dog.id,
@@ -267,9 +267,8 @@ export default function StrayMap() {
         adoption_date: new Date().toISOString().split('T')[0]
       });
 
-      // Navigate to Gallery and set state to show first meal prompt
       setSelectedDog(null);
-      navigate('/Gallery', { state: { dogAdopted: dog } });
+      navigate('/');
     } catch (error) {
       console.error('Error adopting dog:', error);
     }

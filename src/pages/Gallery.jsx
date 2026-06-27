@@ -26,9 +26,39 @@ const fallbackBios = {
   'dog-17': { bio: 'Sunny is a street mom watching over her puppies at a local market in Bangalore. She is protective and devoted to keeping her family safe.', feeder: 'Kavya Nair' },
   'dog-18': { bio: 'Luna is a beautiful white dog found in the countryside near Seoul. She is now getting regular meals from local feeders and is thriving.', feeder: 'Ji-young Park' },
   'dog-19': { bio: 'Midnight is a sweet black dog living on the streets of Seoul. She loves her daily meals and has become a familiar face to local feeders.', feeder: 'Ji-young Park' },
+  'dog-20': { bio: 'Mary is a gentle street dog in Kathmandu who waits patiently for her daily meals. She is calm, well-mannered and beloved by the local community who keep a watchful eye on her.', feeder: 'Puja Lama' },
+};
+
+const getFallbackBio = (dogId, dogName, location) => {
+  const existing = fallbackBios[dogId];
+  if (existing) return existing;
+  const num = (parseInt(String(dogId).replace(/\D/g, ''), 10) || 1);
+  const pronoun = num % 2 === 0 ? 'she' : 'he';
+  const capPronoun = pronoun === 'she' ? 'She' : 'He';
+  const age = AGES[num % AGES.length];
+  const loc = location || `${pronoun === 'she' ? 'her' : 'his'} local neighborhood`;
+  const bioTexts = [
+    `${dogName || 'This dog'} lives in ${loc} where ${pronoun} is looked after by local feeders. ${capPronoun} has a regular spot to rest and access to fresh water nearby. As a ${age.toLowerCase()} dog, ${pronoun} is at a healthy weight and always wags ${pronoun === 'she' ? 'her' : 'his'} tail excitedly when feeders arrive.`,
+    `${dogName || 'This dog'} is a ${age.toLowerCase()} stray dog in ${loc}. ${capPronoun} sleeps in a quiet sheltered area and depends on daily meals from the Feed a Stray network. ${capPronoun} is friendly, healthy, and loves the attention ${pronoun} gets from people who bring food.`,
+    `${dogName || 'This dog'} roams the streets of ${loc} and has learned which doors bring food. ${capPronoun} shares ${pronoun === 'she' ? 'her' : 'his'} territory with a few other dogs and gets along well with them. ${age !== 'Senior' ? `${capPronoun} is full of energy and loves greeting familiar faces.` : `${capPronoun} has lived on these streets for years and knows every safe spot.`}`,
+  ];
+  return {
+    bio: bioTexts[num % bioTexts.length],
+    feeder: 'Feed a Stray Network',
+  };
 };
 
 // Stock feeding photos with realistic metadata
+const AGES = ['Puppy', 'Young', 'Adult', 'Senior'];
+
+const dogFallback = (dogId) => {
+  const num = parseInt(String(dogId).replace(/\D/g, ''), 10) || 1;
+  return {
+    gender: num % 2 === 0 ? 'female' : 'male',
+    age: AGES[num % AGES.length],
+  };
+};
+
 const stockFeedingPhotos = [
   {
     url: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&q=80',
@@ -108,6 +138,9 @@ export default function Gallery() {
       for (const dog of dogs) {
         if (dogMap[dog.dog_id]) {
           dogMap[dog.dog_id].meals += dog.meals_provided || 1;
+          if (dog.last_fed_date > (dogMap[dog.dog_id].last_fed_date || '')) {
+            dogMap[dog.dog_id].last_fed_date = dog.last_fed_date;
+          }
         } else {
           dogMap[dog.dog_id] = {
             id: dog.id,
@@ -116,7 +149,8 @@ export default function Gallery() {
             meals: dog.meals_provided || 1,
             photo_url: dog.dog_photo,
             adoption_date: dog.adoption_date,
-            dog_id: dog.dog_id
+            dog_id: dog.dog_id,
+            last_fed_date: dog.last_fed_date || null
           };
         }
       }
@@ -179,15 +213,19 @@ export default function Gallery() {
           }
         }
         for (const id of dogIds) {
-          if (!bioMap[id] && fallbackBios[id]) {
-            bioMap[id] = { ...fallbackBios[id], source: 'fallback' };
+          if (!bioMap[id]) {
+            const dog = userDogs.find(d => d.dog_id === id);
+            const fallback = fallbackBios[id] || getFallbackBio(id, dog?.dog_name, dog?.location);
+            if (fallback) bioMap[id] = { ...fallback, source: 'fallback' };
           }
         }
         return bioMap;
       } catch {
         const bioMap = {};
         for (const id of dogIds) {
-          if (fallbackBios[id]) bioMap[id] = { ...fallbackBios[id], source: 'fallback' };
+          const dog = userDogs.find(d => d.dog_id === id);
+          const fallback = fallbackBios[id] || getFallbackBio(id, dog?.dog_name, dog?.location);
+          if (fallback) bioMap[id] = { ...fallback, source: 'fallback' };
         }
         return bioMap;
       }
@@ -233,6 +271,11 @@ export default function Gallery() {
     if (deliveredMealDates.length > 0) {
       const lastMealDate = Math.max(...deliveredMealDates);
       daysSinceLastMeal = Math.floor((Date.now() - lastMealDate) / (1000 * 60 * 60 * 24));
+    }
+    // Fallback to last_fed_date from the dog record
+    if (daysSinceLastMeal === null && dog.last_fed_date) {
+      const lastFed = new Date(dog.last_fed_date + 'T00:00:00');
+      daysSinceLastMeal = Math.floor((Date.now() - lastFed.getTime()) / (1000 * 60 * 60 * 24));
     }
     return { delivered: deliveredMeals, pending: stillPending, daysSinceLastMeal };
   };
@@ -330,14 +373,27 @@ export default function Gallery() {
               )}
               <div className="flex-1 min-w-0">
                  <h3 className="font-semibold text-amber-900 truncate">{dog.dog_name}</h3>
-                 <div className="flex items-center gap-1 text-amber-600 text-sm">
-                   <MapPin className="w-3 h-3 flex-shrink-0" />
-                   <span className="truncate">{dog.location}</span>
-                 </div>
-                 {(() => {
-                   const reward = getLatestReward(dog.dog_id);
-                   if (!reward) return null;
-                   const rewardDate = reward.completed_at || reward.created_date;
+                  <div className="flex items-center gap-1 text-amber-600 text-sm">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{dog.location}</span>
+                  </div>
+                  {(() => {
+                    const fb = dogFallback(dog.dog_id);
+                    return (
+                      <div className="flex gap-1.5 mt-1">
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${fb.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                          {fb.gender}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                          {fb.age}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                  {(() => {
+                    const reward = getLatestReward(dog.dog_id);
+                    if (!reward) return null;
+                    const rewardDate = reward.completed_at || reward.created_date;
                    const dateStr = rewardDate ? new Date(rewardDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
                    return (
                      <div className="flex items-center gap-1 mt-1">
@@ -347,32 +403,19 @@ export default function Gallery() {
                    );
                  })()}
                </div>
-              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                {(() => {
-                  const status = getMealStatus(dog);
-                  return (
-                    <div className="space-y-0.5 text-right">
-                      {status.delivered > 0 && (
-                        <div className="text-right space-y-0.5">
-                          <p className="text-xs text-amber-500">Meals = <span className="font-bold text-amber-900">{status.delivered}</span></p>
-                          {status.daysSinceLastMeal !== null && (
-                            <p className="text-xs text-amber-500">Last fed = <span className="font-semibold text-amber-700">{status.daysSinceLastMeal === 0 ? 'today' : `${status.daysSinceLastMeal}d ago`}</span></p>
-                          )}
-                        </div>
-                      )}
-                      {status.pending > 0 && (
-                        <div className="flex items-center gap-1 text-orange-600">
-                          <Clock className="w-3 h-3" />
-                          <span className="text-xs">{status.pending} pending</span>
-                        </div>
-                      )}
-                      {status.delivered === 0 && status.pending === 0 && (
-                        <p className="text-xs text-amber-500">Meals = <span className="font-bold text-amber-900">{dog.meals}</span></p>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
+               <div className="flex flex-col items-end gap-0.5 flex-shrink-0 text-right">
+                 {(() => {
+                   const status = getMealStatus(dog);
+                   const daysLabel = status.daysSinceLastMeal === null ? '-' : status.daysSinceLastMeal === 0 ? 'today' : `${status.daysSinceLastMeal}`;
+                   return (
+                     <>
+                       <p className="text-xs text-amber-500">meals-provided: <span className="font-bold text-amber-900">{status.delivered}</span></p>
+                       <p className="text-xs text-amber-500">meals-pending: <span className="font-bold text-amber-900">{status.pending}</span></p>
+                       <p className="text-xs text-amber-500">days since last meal= <span className="font-semibold text-amber-700">{daysLabel}</span></p>
+                     </>
+                   );
+                 })()}
+               </div>
             </motion.div>
           ))}
         </div>
@@ -489,28 +532,7 @@ export default function Gallery() {
 
               {/* Bio & Feeder */}
               {(() => {
-                const bioData = dogBios[selectedDog.dog_id] || fallbackBios[selectedDog.dog_id];
-                if (!bioData) {
-                  return (
-                    <div className="bg-white/10 rounded-2xl p-4 mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-white/50">No bio yet</p>
-                        <button
-                          onClick={() => generateBioMutation.mutate(selectedDog)}
-                          disabled={generateBioMutation.isPending}
-                          className="flex items-center gap-1.5 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {generateBioMutation.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Sparkles className="w-3 h-3" />
-                          )}
-                          Generate AI Bio
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
+                const bioData = dogBios[selectedDog.dog_id] || getFallbackBio(selectedDog.dog_id, selectedDog.dog_name, selectedDog.location);
                 return (
                   <div className="bg-white/10 rounded-2xl p-4 mb-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">

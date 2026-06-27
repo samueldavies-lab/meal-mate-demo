@@ -1,0 +1,15 @@
+{
+  "name": "DailyActivity",
+  "type": "object",
+  "properties": {
+    "date": { "type": "string", "description": "Date in YYYY-MM-DD format" },
+    "active_users": { "type": "number", "default": 0, "description": "Daily active users" },
+    "ads_watched": { "type": "number", "default": 0, "description": "Total ads watched this day" },
+    "meals_provided": { "type": "number", "default": 0, "description": "Total meals provided this day" },
+    "server_hours": { "type": "number", "default": 0, "description": "Server hours generated this day" },
+    "regular_ads": { "type": "number", "default": 0, "description": "Ads by non-supporter users" },
+    "supporter_ads": { "type": "number", "default": 0, "description": "Ads by supporter users" },
+    "dev_support_ads": { "type": "number", "default": 0, "description": "Developer support ads" }
+  },
+  "required": ["date"]
+}

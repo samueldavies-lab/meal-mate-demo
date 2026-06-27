@@ -40,6 +40,19 @@ const inactiveIcon = new L.DivIcon({
   iconSize: [24, 24], iconAnchor: [12, 24],
 });
 
+const AGES = ['Puppy', 'Young', 'Adult', 'Senior'];
+
+const getDogFallback = (dog) => {
+  const num = parseInt(String(dog.id).replace(/\D/g, ''), 10) || 1;
+  return {
+    gender: num % 2 === 0 ? 'female' : 'male',
+    age: AGES[num % AGES.length],
+  };
+};
+
+const dogGender = (dog) => dog.gender || getDogFallback(dog).gender;
+const dogAge = (dog) => dog.age || getDogFallback(dog).age;
+
 function MapFly({ country }) {
   const map = useMap();
   useEffect(() => {
@@ -165,12 +178,20 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
             className="bg-white border-t border-amber-100 px-4 py-4 flex-shrink-0"
           >
             <div className="flex gap-2 mb-3">
-              {chosen.map(dog => (
-                <div key={dog.id} className="flex-1 flex flex-col items-center">
-                  <img src={dog.photo} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
-                  <span className="text-xs text-amber-800 font-semibold mt-1">{dog.name}</span>
-                </div>
-              ))}
+              {chosen.map(dog => {
+                const g = dogGender(dog);
+                const a = dogAge(dog);
+                return (
+                  <div key={dog.id} className="flex-1 flex flex-col items-center">
+                    <img src={dog.photo} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
+                    <span className="text-xs text-amber-800 font-semibold mt-1">{dog.name}</span>
+                    <div className="flex gap-1 mt-0.5">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${g === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>{g}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">{a}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <Button
               onClick={() => saveMutation.mutate(chosen)}
@@ -229,12 +250,20 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
                     className="mb-4"
                   >
                     <div className="flex gap-2 mb-3">
-                      {chosen.map(dog => (
-                        <div key={dog.id} className="flex-1 flex flex-col items-center">
-                          <img src={dog.photo} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
-                          <span className="text-xs text-amber-800 font-semibold mt-1 text-center leading-tight">{dog.name}</span>
-                        </div>
-                      ))}
+                      {chosen.map(dog => {
+                        const g = dogGender(dog);
+                        const a = dogAge(dog);
+                        return (
+                          <div key={dog.id} className="flex-1 flex flex-col items-center">
+                            <img src={dog.photo} alt={dog.name} className="w-12 h-12 rounded-full object-cover border-2 border-amber-400" />
+                            <span className="text-xs text-amber-800 font-semibold mt-1 text-center leading-tight">{dog.name}</span>
+                            <div className="flex gap-1 mt-0.5">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${g === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>{g}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">{a}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                     <Button
                       onClick={() => saveMutation.mutate(chosen)}
@@ -264,16 +293,22 @@ export default function AdoptionMapModal({ isOpen, userEmail, onComplete }) {
                         }`}
                       >
                         <img src={dog.photo} alt={dog.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                        <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="font-bold text-amber-900">{dog.name}</p>
+                            <div>
+                              <p className="font-bold text-amber-900">{dog.name}</p>
+                              <div className="flex gap-1.5 mt-0.5">
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${dogGender(dog) === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>{dogGender(dog)}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">{dogAge(dog)}</span>
+                              </div>
+                            </div>
                             {selected && (
                               <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
                                 <Check className="w-4 h-4 text-white" />
                               </div>
                             )}
                           </div>
-                          <p className="text-xs text-amber-600 mb-1">{dog.city} · {dog.age} · {dog.gender}</p>
+                          <p className="text-xs text-amber-600 mb-1">{dog.city}</p>
                           <p className="text-xs text-amber-700 line-clamp-2">{dog.description}</p>
                         </div>
                       </motion.div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, CheckCircle, Dog } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -33,13 +33,29 @@ export default function PendingMealsNotification({ userEmail }) {
     refetchInterval: 30000
   });
 
+  // Increment total_meals_provided when a meal is delivered
+  const incrementMealsDelivered = useCallback(async (userEmail) => {
+    try {
+      const stats = await base44.entities.UserStats.filter({ user_email: userEmail });
+      if (stats.length > 0) {
+        await base44.entities.UserStats.update(stats[0].id, {
+          total_meals_provided: (stats[0].total_meals_provided || 0) + 1
+        });
+        queryClient.invalidateQueries({ queryKey: ['userStats'] });
+        queryClient.invalidateQueries({ queryKey: ['globalMealCount'] });
+      }
+    } catch (e) {
+      console.error('Failed to increment delivered meals:', e);
+    }
+  }, [queryClient]);
+
   // Check for meals ready to be "delivered" and build a queue
   useEffect(() => {
     const checkDeliveries = async () => {
       const now = new Date();
       const newNotifications = [];
       for (const meal of pendingMeals) {
-        const scheduledTime = new Date(meal.delivery_scheduled_at);
+        const scheduledTime = meal.scheduled_date ? new Date(meal.scheduled_date) : new Date(meal.delivery_scheduled_at);
         if (now >= scheduledTime && meal.status === 'pending') {
           const randomPhoto = deliveryPhotos[Math.floor(Math.random() * deliveryPhotos.length)];
           await base44.entities.PendingMeal.update(meal.id, {
@@ -47,6 +63,7 @@ export default function PendingMealsNotification({ userEmail }) {
             delivered_at: now.toISOString(),
             delivery_photo: randomPhoto
           });
+          await incrementMealsDelivered(meal.user_email);
           newNotifications.push({
             dogName: meal.dog_name,
             dogPhoto: meal.dog_photo,
@@ -65,7 +82,7 @@ export default function PendingMealsNotification({ userEmail }) {
     if (pendingMeals.length > 0) {
       checkDeliveries();
     }
-  }, [pendingMeals, queryClient]);
+  }, [pendingMeals, queryClient, incrementMealsDelivered]);
 
   const deliveryNotification = notificationQueue[0] ?? null;
 
