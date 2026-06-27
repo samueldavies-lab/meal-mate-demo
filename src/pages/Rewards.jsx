@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MilestoneCelebration from '../components/rewards/MilestoneCelebration';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export const rewardMilestones = [
   { key: "snack_treat",       meals: 50,   title: "Special Snack & Treat",    description: "Nutritious treats delivered to your dog",                              icon: "🍖", color: "from-pink-400 to-rose-400" },
@@ -123,6 +124,7 @@ export default function Rewards() {
       }
     } catch (e) {
       console.error('Failed to allocate points:', e);
+      toast.error('Failed to save allocation. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -294,6 +296,16 @@ export default function Rewards() {
                   ) : null;
                 })()}
               </div>
+              {(() => {
+                const active = getActiveAlloc(allocating.key);
+                const already = active?.meals_allocated || 0;
+                const needed = allocating.meals - already;
+                return needed > 0 ? (
+                  <p className="text-xs text-amber-600 text-center mb-1">
+                    {needed > availablePoints ? `Need ${needed} pts total — watch more ads to earn ${needed - availablePoints} more` : `Allocate at least ${needed} pts to unlock this reward`}
+                  </p>
+                ) : null;
+              })()}
               <p className="text-sm font-medium text-amber-800 text-center mb-3">How many points to allocate?</p>
               <div className="flex items-center justify-center gap-6 mb-5">
                 <button
